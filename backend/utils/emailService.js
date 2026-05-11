@@ -15,7 +15,8 @@ const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: `"LifeLink Support" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'LifeLink - Password Reset Verification Code',
+    subject: 'OTP Verification',
+    text: `Your OTP is ${otp}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden;">
         <div style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 30px; text-align: center;">
@@ -44,11 +45,11 @@ const sendOTPEmail = async (email, otp) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    console.log(`Professional OTP email sent to ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Mail Sent:", info.response);
     return true;
   } catch (error) {
-    console.error('Error sending professional email:', error);
+    console.log("❌ MAIL ERROR:", error);
     // If it fails, we still log for development
     console.log(`[BACKUP LOG] OTP for ${email}: ${otp}`);
     return false;
