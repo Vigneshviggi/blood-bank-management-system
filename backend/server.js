@@ -7,6 +7,7 @@ const cors = require("cors");
 // Import models and routes
 const ContactSupport = require("./models/ContactSupport");
 const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 const requestRoutes = require("./routes/requestRoutes");
 const donorRoutes = require("./routes/donorRoutes");
 const campRoutes = require("./routes/campRoutes");
@@ -57,6 +58,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // User routes
 app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
 // Request routes
 app.use("/api/requests", requestRoutes);

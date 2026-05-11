@@ -16,12 +16,12 @@ const ForgotPassword = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/forgot-password`, { email });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, { email });
       toast.success(response.data.message);
       sessionStorage.setItem('resetEmail', email);
       navigate('/verify-otp');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Something went wrong');
+      toast.error(error.response?.data?.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }

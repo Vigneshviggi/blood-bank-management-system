@@ -29,7 +29,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/reset-password`, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
         email,
         otp,
         newPassword: password
@@ -38,7 +38,7 @@ const ResetPassword = () => {
       sessionStorage.clear();
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to reset password');
+      toast.error(error.response?.data?.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }
