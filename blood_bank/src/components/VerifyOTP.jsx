@@ -51,7 +51,7 @@ const VerifyOTP = () => {
 
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/users/verify-otp', { email, otp: otpValue });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/verify-otp`, { email, otp: otpValue });
       sessionStorage.setItem('verifiedOTP', otpValue);
       toast.success('OTP Verified Successfully');
       navigate('/reset-password');
@@ -65,7 +65,7 @@ const VerifyOTP = () => {
   const resendOTP = async () => {
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/users/forgot-password', { email });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/forgot-password`, { email });
       setTimer(300);
       toast.success('New OTP sent to your email');
     } catch (error) {

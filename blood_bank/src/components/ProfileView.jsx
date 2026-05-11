@@ -11,7 +11,7 @@ export default function ProfileView() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/users/${id}`)
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}`)
         if (!response.ok) throw new Error('Profile not found')
         const data = await response.json()
         setProfile(data)

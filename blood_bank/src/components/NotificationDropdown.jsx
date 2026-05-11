@@ -7,7 +7,7 @@ import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 
-const socket = io('http://localhost:5000');
+const socket = io(import.meta.env.VITE_API_URL);
 
 const NotificationDropdown = () => {
   const [notifications, setNotifications] = useState([]);
@@ -45,7 +45,7 @@ const NotificationDropdown = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/notifications?userId=${user?._id}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notifications?userId=${user?._id}`);
       setNotifications(response.data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -54,7 +54,7 @@ const NotificationDropdown = () => {
 
   const markAsRead = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/notifications/read/${id}`);
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/notifications/read/${id}`);
       setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -63,7 +63,7 @@ const NotificationDropdown = () => {
 
   const clearAll = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/notifications/clear?userId=${user?._id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/notifications/clear?userId=${user?._id}`);
       setNotifications([]);
       toast.success('All notifications cleared');
     } catch (error) {

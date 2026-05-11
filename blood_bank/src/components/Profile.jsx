@@ -57,7 +57,7 @@ export default function Profile() {
     if (!user) return;
     setLoading(true);
     try {
-      const response = await axios.put(`http://localhost:5000/api/users/${user._id}`, formData);
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${user._id}`, formData);
       updateContextProfile(response.data);
       setIsEditing(false)
       alert('Profile updated successfully!')

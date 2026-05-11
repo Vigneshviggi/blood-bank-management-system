@@ -32,10 +32,10 @@ export default function AdminPanel() {
     setLoading(true)
     try {
       const [u, r, d, c] = await Promise.all([
-        axios.get('http://localhost:5000/api/users'),
-        axios.get('http://localhost:5000/api/requests'),
-        axios.get('http://localhost:5000/api/donors'),
-        axios.get('http://localhost:5000/api/camps')
+        axios.get(`${import.meta.env.VITE_API_URL}/api/users`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/requests`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/donors`),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/camps`)
       ])
 
       setData({
@@ -61,7 +61,7 @@ export default function AdminPanel() {
   const handlePromote = async (userId) => {
     if (!window.confirm('Are you sure you want to promote this user to Admin?')) return
     try {
-      await axios.put(`http://localhost:5000/api/users/${userId}`, { role: 'admin' })
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, { role: 'admin' })
       alert('User promoted to Admin! 👑')
       fetchAllData()
     } catch (error) {
@@ -73,7 +73,7 @@ export default function AdminPanel() {
     if (!window.confirm(`Are you sure you want to delete this ${type.slice(0, -1)}? This action cannot be undone.`)) return
     
     try {
-      await axios.delete(`http://localhost:5000/api/${type}/${id}`)
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/${type}/${id}`)
       alert('Record deleted successfully from database! 🗑️')
       fetchAllData()
     } catch (error) {
@@ -89,7 +89,7 @@ export default function AdminPanel() {
   const handleSaveEdit = async () => {
     const id = editingItem._id || editingItem.id;
     try {
-      await axios.put(`http://localhost:5000/api/${activeTab}/${id}`, editFormData)
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/${activeTab}/${id}`, editFormData)
       alert('Record updated in database successfully! ✅')
       setEditingItem(null)
       fetchAllData()

@@ -16,7 +16,7 @@ const Notifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/notifications');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/notifications`);
       setNotifications(response.data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -27,7 +27,7 @@ const Notifications = () => {
 
   const deleteNotification = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/notifications/${id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/notifications/${id}`);
       setNotifications(notifications.filter(n => n._id !== id));
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -36,7 +36,7 @@ const Notifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      await axios.put('http://localhost:5000/api/notifications/read-all');
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`);
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Error marking all as read:', error);

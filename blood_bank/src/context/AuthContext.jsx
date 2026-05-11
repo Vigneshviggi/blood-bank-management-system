@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/users/login', { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { email, password });
       const { token, user } = response.data;
       
       setUser(user);
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      await axios.post('http://localhost:5000/api/users/register', userData);
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/register`, userData);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.response?.data?.error || 'Registration failed' };

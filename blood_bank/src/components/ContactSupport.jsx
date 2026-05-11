@@ -45,7 +45,7 @@ export default function ContactSupport() {
   if (!validate()) return;
 
   try {
-    await axios.post("http://localhost:5000/contact-support", formData);
+    await axios.post(`${import.meta.env.VITE_API_URL}/contact-support`, formData);
 
     setSubmitted(true);
 
