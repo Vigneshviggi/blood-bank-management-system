@@ -87,7 +87,6 @@ export default function Register() {
           >
             <option value="donor">Individual Donor</option>
             <option value="hospital">Hospital / Medical Center</option>
-            <option value="admin">System Administrator</option>
           </select>
         </div>
 

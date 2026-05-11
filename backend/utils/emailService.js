@@ -15,7 +15,7 @@ const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: `"LifeLink Support" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: 'OTP Verification',
+    subject: 'LifeLink OTP Verification',
     text: `Your OTP is ${otp}`,
     html: `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden;">
