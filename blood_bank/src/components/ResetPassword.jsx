@@ -12,15 +12,15 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const phone = sessionStorage.getItem('resetPhone');
+  const email = sessionStorage.getItem('resetEmail');
   const otp = sessionStorage.getItem('verifiedOTP');
 
   useEffect(() => {
-    if (!phone || !otp) {
+    if (!email || !otp) {
       toast.error('Unauthorized access');
       navigate('/forgot-password');
     }
-  }, [phone, otp, navigate]);
+  }, [email, otp, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +30,7 @@ const ResetPassword = () => {
     setLoading(true);
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
-        phone,
+        email,
         otp,
         newPassword: password
       });

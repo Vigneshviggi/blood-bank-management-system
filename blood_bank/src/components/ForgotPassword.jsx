@@ -2,24 +2,23 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Phone, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const ForgotPassword = () => {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!phone) return toast.error('Please enter your phone number');
-    if (!/^\d{10}$/.test(phone)) return toast.error('Please enter a valid 10-digit phone number');
+    if (!email) return toast.error('Please enter your email address');
 
     setLoading(true);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, { phone });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, { email });
       toast.success(response.data.message);
-      sessionStorage.setItem('resetPhone', phone);
+      sessionStorage.setItem('resetEmail', email);
       navigate('/verify-otp');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Something went wrong');
@@ -37,24 +36,24 @@ const ForgotPassword = () => {
       >
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            <Phone className="h-8 w-8" />
+            <Mail className="h-8 w-8" />
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Forgot Password?</h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            Enter your registered phone number below and we'll send you a 6-digit OTP to reset your password.
+            Enter your registered email address below and we'll send you a 6-digit OTP to reset your password.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-gray-300">Phone Number</label>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-gray-300">Email Address</label>
             <div className="relative mt-2">
-              <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+              <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="10-digit number"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                 required
               />
