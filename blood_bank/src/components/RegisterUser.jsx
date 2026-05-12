@@ -6,6 +6,7 @@ import Card from './Card.jsx';
 const initialState = {
   name: '',
   email: '',
+  phone: '',
   password: '',
   role: 'donor',
   bloodGroup: '',
@@ -70,7 +71,7 @@ const RegisterUser = () => {
 
         <Card className="shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-gray-800">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 dark:text-gray-300">Full Name</label>
                 <input 
@@ -90,6 +91,18 @@ const RegisterUser = () => {
                   onChange={handleChange} 
                   placeholder="john@lifelink.org" 
                   type="email" 
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/5 dark:border-gray-800 dark:bg-gray-800/50" 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-700 dark:text-gray-300">Phone Number</label>
+                <input 
+                  name="phone" 
+                  value={form.phone} 
+                  onChange={handleChange} 
+                  placeholder="10-digit number" 
+                  type="tel" 
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/5 dark:border-gray-800 dark:bg-gray-800/50" 
                   required 
                 />

@@ -16,7 +16,7 @@ export default function Profile() {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: user?.phone || '+1 (555) 000-0000',
+    phone: user?.phone || '',
     bloodGroup: user?.bloodGroup || 'O+',
     location: user?.location || '',
     bio: user?.bio || 'Dedicated LifeLink member.',
@@ -28,7 +28,7 @@ export default function Profile() {
       setFormData({
         name: user.name || '',
         email: user.email || '',
-        phone: user.phone || '+1 (555) 000-0000',
+        phone: user.phone || '',
         bloodGroup: user.bloodGroup || 'O+',
         location: user.location || '',
         bio: user.bio || 'Dedicated LifeLink member.',

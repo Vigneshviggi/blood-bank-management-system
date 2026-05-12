@@ -46,12 +46,14 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
-    const { identifier, password } = req.body; // identifier can be email or phone
+    const { identifier, password } = req.body;
     const user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+    
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
     // Compare hashed password
     let isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch && user.password === password) isMatch = true; // Support legacy
 
     if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
