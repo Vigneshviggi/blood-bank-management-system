@@ -10,10 +10,10 @@ const VerifyOTP = () => {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(300); // 5 minutes
   const navigate = useNavigate();
-  const email = sessionStorage.getItem('resetEmail');
+  const phone = sessionStorage.getItem('resetPhone');
 
   useEffect(() => {
-    if (!email) {
+    if (!phone) {
       toast.error('Session expired, please try again');
       navigate('/forgot-password');
       return;
@@ -24,7 +24,7 @@ const VerifyOTP = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [email, navigate]);
+  }, [phone, navigate]);
 
   const handleChange = (index, value) => {
     if (isNaN(value)) return;
@@ -51,7 +51,7 @@ const VerifyOTP = () => {
 
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/verify-otp`, { email, otp: otpValue });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/verify-otp`, { phone, otp: otpValue });
       sessionStorage.setItem('verifiedOTP', otpValue);
       toast.success('OTP Verified Successfully');
       navigate('/reset-password');
@@ -65,9 +65,9 @@ const VerifyOTP = () => {
   const resendOTP = async () => {
     setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, { email });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, { phone });
       setTimer(300);
-      toast.success('New OTP sent to your email');
+      toast.success('New OTP sent to your phone');
     } catch (error) {
       toast.error('Failed to resend OTP');
     } finally {
@@ -94,7 +94,7 @@ const VerifyOTP = () => {
           </div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Verify OTP</h2>
           <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-            Enter the 6-digit code sent to <span className="font-semibold text-slate-900 dark:text-white">{email}</span>
+            Enter the 6-digit code sent to <span className="font-semibold text-slate-900 dark:text-white">{phone}</span>
           </p>
         </div>
 

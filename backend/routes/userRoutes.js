@@ -27,15 +27,15 @@ const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString()
 // Register user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, bloodGroup, location } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ error: 'User already exists' });
+    const { name, email, phone, password, role, bloodGroup, location } = req.body;
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) return res.status(400).json({ error: 'User with this email or phone already exists' });
 
     // Hash password with bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = new User({ name, email, password: hashedPassword, role, bloodGroup, location });
+    const user = new User({ name, email, phone, password: hashedPassword, role, bloodGroup, location });
     await user.save();
     res.status(201).json({ message: 'User registered successfully' });
   } catch (err) {
@@ -46,8 +46,8 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const { identifier, password } = req.body; // identifier can be email or phone
+    const user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
     // Compare hashed password

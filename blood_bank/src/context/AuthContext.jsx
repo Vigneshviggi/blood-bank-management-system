@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/login`, { identifier, password });
       const { token, user } = response.data;
       
       setUser(user);

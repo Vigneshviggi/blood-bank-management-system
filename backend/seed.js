@@ -35,11 +35,11 @@ const seedData = async () => {
 
     // 1. Seed Users (Admins, Hospitals, Donors)
     const users = await User.insertMany([
-      { name: "Admin Master", email: "admin@lifelink.com", password: hashedPassword, role: "admin", bloodGroup: "O+", location: "Central Plaza" },
-      { name: "St. Jude Hospital Admin", email: "hospital@stjude.com", password: hashedPassword, role: "hospital", bloodGroup: "A-", location: "North Sector" },
-      { name: "Vignesh G.", email: "vignesh@example.com", password: hashedPassword, role: "donor", bloodGroup: "O-", location: "Downtown", bio: "Passionate blood donor since 2020." },
-      { name: "Sofia Chen", email: "sofia@example.com", password: hashedPassword, role: "donor", bloodGroup: "B+", location: "Westside", bio: "Regular donor and community health volunteer." },
-      { name: "Marcus Reed", email: "marcus@example.com", password: hashedPassword, role: "donor", bloodGroup: "AB-", location: "East Park", bio: "Available for emergency AB- requests." },
+      { name: "Admin Master", email: "admin@lifelink.com", phone: "1234567890", password: hashedPassword, role: "admin", bloodGroup: "O+", location: "Central Plaza" },
+      { name: "St. Jude Hospital Admin", email: "hospital@stjude.com", phone: "2234567890", password: hashedPassword, role: "hospital", bloodGroup: "A-", location: "North Sector" },
+      { name: "Vignesh G.", email: "vignesh@example.com", phone: "3234567890", password: hashedPassword, role: "donor", bloodGroup: "O-", location: "Downtown", bio: "Passionate blood donor since 2020." },
+      { name: "Sofia Chen", email: "sofia@example.com", phone: "4234567890", password: hashedPassword, role: "donor", bloodGroup: "B+", location: "Westside", bio: "Regular donor and community health volunteer." },
+      { name: "Marcus Reed", email: "marcus@example.com", phone: "5234567890", password: hashedPassword, role: "donor", bloodGroup: "AB-", location: "East Park", bio: "Available for emergency AB- requests." },
     ]);
     console.log(`Inserted ${users.length} Users.`);
 

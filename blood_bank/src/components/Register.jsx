@@ -10,6 +10,7 @@ export default function Register() {
     role: 'donor',
     name: '',
     email: '',
+    phone: '',
     password: '',
     location: '',
     bloodGroup: 'A+'
@@ -33,6 +34,8 @@ export default function Register() {
     if (!form.name.trim()) next.name = 'Full name or organization name is required'
     if (!form.email.trim()) next.email = 'Email address is required'
     else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Please enter a valid email'
+    if (!form.phone.trim()) next.phone = 'Phone number is required'
+    else if (!/^\d{10}$/.test(form.phone)) next.phone = 'Please enter a valid 10-digit phone number'
     if (!form.password) next.password = 'Password is required'
     else if (form.password.length < 6) next.password = 'Password must be at least 6 characters'
     if (!form.location.trim()) next.location = 'Location details are required'
@@ -122,6 +125,21 @@ export default function Register() {
             />
             {errors.email && <p className="mt-2 text-xs font-medium text-red-600 ml-1">{errors.email}</p>}
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 ml-1">Phone Number</label>
+          <input
+            type="tel"
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            className={`w-full rounded-2xl bg-slate-50 dark:bg-gray-800/50 border-2 px-4 py-3.5 text-sm outline-none transition-all ${
+              errors.phone ? 'border-red-500 bg-red-50/30' : 'border-transparent focus:border-red-500 focus:bg-white dark:focus:bg-gray-800'
+            } dark:text-white`}
+            placeholder="10-digit number"
+          />
+          {errors.phone && <p className="mt-2 text-xs font-medium text-red-600 ml-1">{errors.phone}</p>}
         </div>
 
         <div>

@@ -1,18 +1,25 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configure Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 /**
- * Sends a professional OTP email using Resend
+ * Sends a professional OTP email using Nodemailer
  * @param {string} email - Recipient email
  * @param {string} otp - 6-digit OTP code
  */
 const sendOTPEmail = async (email, otp) => {
   try {
-    const { data, error } = await resend.emails.send({
-      from: 'LifeLink <onboarding@resend.dev>', // Change to your verified domain in production
-      to: [email],
+    const mailOptions = {
+      from: `"LifeLink Network" <${process.env.EMAIL_USER}>`,
+      to: email,
       subject: 'LifeLink - OTP Verification Code',
       html: `
         <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f1f5f9; border-radius: 24px; overflow: hidden; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
@@ -47,19 +54,13 @@ const sendOTPEmail = async (email, otp) => {
         </div>
       `,
       text: `Your LifeLink verification code is: ${otp}. This code expires in 5 minutes.`
-    });
+    };
 
-    if (error) {
-      console.log("❌ RESEND ERROR:", error);
-      // Fallback for development if Resend fails
-      console.log(`[BACKUP LOG] OTP for ${email}: ${otp}`);
-      return false;
-    }
-
-    console.log("✅ Mail Sent via Resend:", data.id);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Mail Sent via Gmail:", info.messageId);
     return true;
   } catch (err) {
-    console.log("❌ MAIL SERVICE CRASH:", err);
+    console.log("❌ MAIL SERVICE ERROR:", err);
     console.log(`[BACKUP LOG] OTP for ${email}: ${otp}`);
     return false;
   }

@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function Login() {
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [errorMsg, setErrorMsg] = useState('')
@@ -23,8 +23,7 @@ export default function Login() {
 
   const validate = () => {
     const next = {}
-    if (!form.email.trim()) next.email = 'Email address is required'
-    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Please enter a valid email'
+    if (!form.identifier.trim()) next.identifier = 'Email or Phone is required'
     if (!form.password) next.password = 'Password is required'
     setErrors(next)
     return Object.keys(next).length === 0
@@ -38,7 +37,7 @@ export default function Login() {
     setErrorMsg('')
     
     try {
-      const result = await login(form.email, form.password)
+      const result = await login(form.identifier, form.password)
       if (result.success) {
         toast.success('Welcome back' + (result.user?.name ? `, ${result.user.name}` : '') + '!')
         navigate('/')
@@ -67,25 +66,25 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 ml-1">Email Address</label>
+          <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 ml-1">Email or Phone</label>
           <div className="relative group">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-red-500 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
             </div>
             <input
-              type="email"
-              name="email"
-              value={form.email}
+              type="text"
+              name="identifier"
+              value={form.identifier}
               onChange={handleChange}
               className={`w-full rounded-2xl bg-slate-50 dark:bg-gray-800/50 border-2 pl-12 pr-4 py-3.5 text-sm outline-none transition-all ${
-                errors.email 
+                errors.identifier 
                 ? 'border-red-500 bg-red-50/30' 
                 : 'border-transparent focus:border-red-500 focus:bg-white dark:focus:bg-gray-800'
               } dark:text-white`}
-              placeholder="name@organization.com"
+              placeholder="Email or Phone Number"
             />
           </div>
-          {errors.email && <p className="mt-2 text-xs font-medium text-red-600 ml-1">{errors.email}</p>}
+          {errors.identifier && <p className="mt-2 text-xs font-medium text-red-600 ml-1">{errors.identifier}</p>}
         </div>
 
         <div>
