@@ -19,9 +19,19 @@ export const createHospital = async (hospitalData) => {
     throw error.response?.data || { error: error.message };
   }
 };
+
 export const fetchStock = async () => {
   try {
     const response = await axios.get(`${API_URL}/stock`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: error.message };
+  }
+};
+
+export const fetchHospitalAnalytics = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/${id}/analytics`);
     return response.data;
   } catch (error) {
     throw error.response?.data || { error: error.message };

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { fetchDonors } from '../api/donorsApi'
 import { TableSkeleton } from './ui/Skeleton.jsx'
 import { useLoading } from '../context/LoadingContext.jsx'
+import { toast } from 'react-hot-toast'
 
 
 export default function Donors() {
@@ -43,6 +44,20 @@ export default function Donors() {
       if (sortBy === 'donations') return b.donations - a.donations
       return 0
     })
+
+  const handleContactDonor = (donor) => {
+    if (donor.phone) {
+      window.location.href = `tel:${donor.phone}`
+      return
+    }
+
+    if (donor.email) {
+      window.location.href = `mailto:${donor.email}`
+      return
+    }
+
+    toast.error('No donor contact details are stored yet.')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -166,21 +181,20 @@ export default function Donors() {
 
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-3 sm:justify-end">
                   <button 
-                    onClick={() => navigate(`/profile-view/${donor._id || donor.id}`)}
+                    onClick={() => navigate(`/profile-view/${donor._id || donor.id}`, { state: { donor } })}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
                   >
                     View Profile
                   </button>
                   <button 
-                    disabled={!donor.availability} 
-                    onClick={() => navigate('/contact')}
+                    onClick={() => handleContactDonor(donor)}
                     className={`px-4 py-2 font-semibold rounded-lg transition ${
                       donor.availability
                         ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-amber-500 text-white hover:bg-amber-600'
                     }`}
                   >
-                    Contact
+                    Contact Donor
                   </button>
                 </div>
               </div>

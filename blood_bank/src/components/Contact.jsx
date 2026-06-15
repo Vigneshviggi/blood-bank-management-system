@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { submitContactMessage } from '../api/contactApi'
+import toast from 'react-hot-toast'
+import BackButton from './BackButton.jsx'
 
 const initialContact = {
   name: '',
@@ -68,10 +70,10 @@ export default function Contact() {
     setLoading(true)
     try {
       await submitContactMessage(formData)
-      alert('Message sent successfully! Our team will get back to you shortly.')
+      toast.success('Message sent successfully! Our team will get back to you shortly.')
       setFormData(initialContact)
     } catch (error) {
-      alert('Failed to send message. Please try again.')
+      toast.error('Failed to send message. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -82,12 +84,7 @@ export default function Contact() {
       <div className="mx-auto max-w-7xl">
         {/* Back Button */}
         <div className="mb-8">
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition dark:border-gray-800 dark:bg-gray-800 dark:text-gray-400"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-          </button>
+          <BackButton />
         </div>
 
         {/* Hero Section */}

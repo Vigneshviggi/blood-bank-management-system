@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext.jsx'
 import axios from 'axios'
 import Card from './Card.jsx'
 import LoadingButton from './ui/LoadingButton.jsx'
+import toast from 'react-hot-toast'
+import BackButton from './BackButton.jsx'
 
 
 export default function Profile() {
@@ -60,9 +62,9 @@ export default function Profile() {
       const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${user._id}`, formData);
       updateContextProfile(response.data);
       setIsEditing(false)
-      alert('Profile updated successfully!')
+      toast.success('Profile updated successfully!')
     } catch (error) {
-      alert('Failed to update profile: ' + (error.response?.data?.error || error.message));
+      toast.error('Failed to update profile: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -85,12 +87,7 @@ export default function Profile() {
       <div className="mx-auto max-w-5xl">
         {/* Header with Back Button */}
         <div className="mb-8 flex items-center gap-6">
-          <button 
-            onClick={() => navigate(-1)}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition dark:border-gray-800 dark:bg-gray-800 dark:text-gray-400"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-          </button>
+          <BackButton />
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white">Profile Settings</h1>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Manage your network identity</p>

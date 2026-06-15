@@ -2,12 +2,18 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { fetchRequestById } from '../api/requestsApi'
 import { submitResponse } from '../api/responsesApi'
+import { useLoading } from '../context/LoadingContext'
+import { toast } from 'react-hot-toast'
+import LoadingButton from './ui/LoadingButton.jsx'
 
 export default function RespondPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { showLoading, hideLoading } = useLoading()
+  
   const [request, setRequest] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     available: true,
@@ -15,8 +21,6 @@ export default function RespondPage() {
     contactNumber: '',
     message: ''
   })
-  const [submitted, setSubmitted] = useState(false)
-  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     const loadRequest = async () => {
@@ -24,7 +28,8 @@ export default function RespondPage() {
         const data = await fetchRequestById(id)
         setRequest(data)
       } catch (error) {
-        console.error("Failed to fetch request:", error)
+        toast.error("Request details unavailable")
+        navigate('/requests')
       } finally {
         setLoading(false)
       }
@@ -38,241 +43,178 @@ export default function RespondPage() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
-  }
-
-  const validate = () => {
-    const next = {}
-    if (!formData.available) {
-      next.available = 'You must confirm availability'
-    }
-    if (!formData.contactNumber.trim()) {
-      next.contactNumber = 'Contact number is required'
-    }
-    setErrors(next)
-    return Object.keys(next).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!validate()) return
+    if (!formData.contactNumber.trim()) {
+      toast.error('Please provide a contact number')
+      return
+    }
 
+    setIsSubmitting(true)
     try {
       await submitResponse({
         requestId: id,
         ...formData
       })
-      setSubmitted(true)
-      setTimeout(() => {
-        navigate('/')
-      }, 3000)
+      toast.success('Your response has been sent! ❤️')
+      setTimeout(() => navigate('/requests'), 2000)
     } catch (error) {
-      console.error('Failed to submit response:', error)
-      alert('Failed to submit response. Please try again.')
+      toast.error('Failed to send response')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const getUrgencyColor = (urgency) => {
-    switch (urgency) {
-      case 'Critical':
-        return 'bg-red-100 text-red-700 border-red-300'
-      case 'Urgent':
-        return 'bg-orange-100 text-orange-700 border-orange-300'
-      default:
-        return 'bg-yellow-100 text-yellow-700 border-yellow-300'
-    }
+  if (loading) return null
+  
+  if (!request) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
+      <div className="text-center space-y-4">
+        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/10 rounded-full flex items-center justify-center mx-auto text-red-600">
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Request Not Found</h2>
+        <p className="text-slate-500 font-medium max-w-xs mx-auto">This request may have been fulfilled or deleted.</p>
+        <button onClick={() => navigate('/requests')} className="px-8 py-3 bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/20 hover:scale-105 transition">View All Requests</button>
+      </div>
+    </div>
+  )
+
+  const urgencyLevels = {
+    'Critical': 'from-red-600 to-red-800',
+    'High': 'from-orange-500 to-orange-700',
+    'Normal': 'from-blue-500 to-blue-700'
   }
 
   return (
-    <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-3xl">
-        {/* Header */}
-        <div className="mb-8 flex items-center gap-4">
-          <button
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex items-center gap-6 mb-12">
+          <button 
             onClick={() => navigate(-1)}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 transition shadow-sm"
+            className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] border border-slate-100 bg-white text-slate-600 shadow-xl shadow-slate-200/50 transition-all hover:-translate-x-1 hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:shadow-none"
           >
-            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Respond to Blood Request</h1>
-            <p className="mt-1 text-sm text-slate-600">Provide your availability and details to help this urgent request.</p>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Respond to Request</h1>
+            <p className="mt-1 text-slate-500 font-medium">Your contribution can save a life today.</p>
           </div>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading request details...</div>
-        ) : !request ? (
-          <div className="text-center py-12 text-gray-500">Request not found.</div>
-        ) : submitted ? (
-          <div className="rounded-2xl border border-green-200 bg-green-50 p-6 text-center sm:p-8">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <svg className="h-6 w-6 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-green-900">Thank you!</h2>
-            <p className="mt-2 text-sm text-green-700">
-              Your response has been recorded. The hospital will contact you shortly to confirm.
-            </p>
-            <p className="mt-4 text-xs text-green-600">Redirecting to home...</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Request Details */}
-            <div className="lg:col-span-1">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">Request Details</h2>
-
-                <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Request Card */}
+          <div className="lg:col-span-1">
+            <div className={`bg-gradient-to-br ${urgencyLevels[request.priority] || urgencyLevels.Normal} rounded-[3rem] p-10 text-white shadow-2xl shadow-red-500/20 relative overflow-hidden`}>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
+              <div className="relative z-10">
+                <span className="px-4 py-1.5 bg-white/20 text-[10px] font-black uppercase tracking-widest rounded-full">
+                  {request.emergencyLevel || request.priority} Priority
+                </span>
+                <div className="mt-8 flex items-center gap-6">
+                  <div className="w-20 h-20 rounded-[1.5rem] bg-white text-red-600 flex items-center justify-center text-3xl font-black shadow-lg">
+                    {request.bloodGroup || request.bloodType}
+                  </div>
                   <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Blood Group</p>
-                    <p className="mt-1 text-lg font-bold text-red-600">{request.bloodType}</p>
+                    <p className="text-sm font-bold opacity-80">Required Units</p>
+                    <p className="text-3xl font-black">{request.unitsNeeded || request.quantity} Units</p>
                   </div>
+                </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Urgency</p>
-                    <span className={`mt-1 inline-block rounded-full px-3 py-1 text-sm font-semibold border ${getUrgencyColor(request.priority)}`}>
-                      {request.priority}
-                    </span>
+                <div className="mt-10 space-y-6">
+                  <div className="flex gap-4">
+                    <svg className="w-5 h-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                    <p className="text-sm font-bold">{request.location || 'Hospital Direct'}</p>
                   </div>
+                  <div className="flex gap-4">
+                    <svg className="w-5 h-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <p className="text-sm font-bold">Needed by {new Date(request.dateRequired).toLocaleDateString()}</p>
+                  </div>
+                </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Location</p>
-                    <p className="mt-1 text-sm text-slate-700">{request.location || 'Not specified'}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Hospital</p>
-                    <p className="mt-1 text-sm text-slate-700">{request.hospitalName || 'Blekinge Hospital'}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Quantity Needed</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{request.quantity} units</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-slate-600 uppercase">Date Needed</p>
-                    <p className="mt-1 text-sm text-slate-700">{new Date(request.dateRequired).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
-                  </div>
-
-                  <div className="border-t border-slate-200 pt-4">
-                    <p className="text-xs font-medium text-slate-600 uppercase mb-2">Description</p>
-                    <p className="text-sm leading-6 text-slate-700">{request.reason}</p>
-                  </div>
+                <div className="mt-10 pt-8 border-t border-white/10">
+                  <p className="text-xs font-black uppercase tracking-widest opacity-60 mb-2">Reason</p>
+                  <p className="text-sm font-medium italic">"{request.reason}"</p>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Response Form */}
-            <form onSubmit={handleSubmit} className="lg:col-span-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-900 mb-6">Your Response</h2>
-
-                {/* Availability Toggle */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 bg-slate-50">
-                    <div>
-                      <p className="font-medium text-slate-900">Confirm Availability</p>
-                      <p className="text-xs text-slate-600 mt-1">Are you available to donate now?</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="available"
-                        checked={formData.available}
-                        onChange={handleChange}
-                        className="sr-only peer"
-                      />
-                      <div className={`w-14 h-8 rounded-full border-2 transition-all duration-200 ease-in-out ${
-                        formData.available 
-                          ? 'bg-red-600 border-red-600' 
-                          : 'bg-slate-300 border-slate-300'
-                      }`} />
-                      <span className={`absolute left-1 top-1 w-6 h-6 bg-white rounded-full transition-transform duration-200 ${
-                        formData.available ? 'translate-x-6' : ''
-                      }`} />
-                    </label>
-                  </div>
-                  {errors.available && <p className="mt-2 text-xs text-red-600">{errors.available}</p>}
+          {/* Response Form */}
+          <div className="lg:col-span-2">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-[3.5rem] p-12 border border-slate-100 dark:border-gray-700 shadow-2xl shadow-slate-200/50 dark:shadow-none space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Contact Number</label>
+                  <input
+                    type="tel"
+                    name="contactNumber"
+                    required
+                    value={formData.contactNumber}
+                    onChange={handleChange}
+                    placeholder="e.g. +91 9876543210"
+                    className="w-full px-6 py-5 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  />
                 </div>
 
-                {/* Arrival Time */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Estimated Arrival Time (minutes)
-                  </label>
+                <div className="space-y-4">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Arrival Time</label>
                   <select
                     name="arrivalTime"
                     value={formData.arrivalTime}
                     onChange={handleChange}
-                    className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/10"
+                    className="w-full px-6 py-5 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all appearance-none cursor-pointer"
                   >
-                    <option value="15">15 minutes</option>
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="120">2 hours</option>
+                    <option value="15">Within 15 mins</option>
+                    <option value="30">Within 30 mins</option>
+                    <option value="60">Within 1 hour</option>
+                    <option value="120">Within 2 hours</option>
+                    <option value="later">Sometime today</option>
                   </select>
                 </div>
-
-                {/* Contact Number */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Contact Number <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="contactNumber"
-                    value={formData.contactNumber}
-                    onChange={handleChange}
-                    placeholder="+1 (555) 123-4567"
-                    className={`w-full rounded-lg border px-4 py-3 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/10 ${
-                      errors.contactNumber ? 'border-red-500' : 'border-slate-300'
-                    }`}
-                  />
-                  {errors.contactNumber && <p className="mt-1 text-xs text-red-600">{errors.contactNumber}</p>}
-                </div>
-
-                {/* Optional Message */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Additional Message (optional)
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Any additional information for the hospital..."
-                    rows="4"
-                    className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/10 resize-none"
-                  />
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3 border-t border-slate-200 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="flex-1 rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition-all duration-200 ease-in-out hover:bg-slate-50 hover:scale-105 active:scale-95"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 rounded-lg bg-red-600 px-4 py-3 text-sm font-semibold text-white transition-all duration-200 ease-in-out hover:bg-red-700 hover:scale-105 hover:shadow-md active:scale-95"
-                  >
-                    Confirm Response
-                  </button>
-                </div>
               </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Message to Hospital</label>
+                <textarea
+                  name="message"
+                  rows={4}
+                  value={formData.message}
+                  onChange={handleChange}
+                  placeholder="I can be there in 30 minutes, I have the required blood group..."
+                  className="w-full px-6 py-5 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-5 p-8 bg-red-50 dark:bg-red-950/20 rounded-[2rem] border border-red-100 dark:border-red-900/30">
+                <input 
+                  type="checkbox"
+                  name="available"
+                  required
+                  checked={formData.available}
+                  onChange={handleChange}
+                  className="w-6 h-6 rounded-lg text-red-600 focus:ring-red-500 border-red-300"
+                />
+                <p className="text-sm font-black text-red-900 dark:text-red-200 leading-tight">
+                  I confirm that I am available to fulfill this request and meet the health criteria for donation.
+                </p>
+              </div>
+
+              <LoadingButton
+                type="submit"
+                loading={isSubmitting}
+                loadingText="Sending Response..."
+                className="w-full py-6 rounded-[2rem] bg-slate-900 dark:bg-red-600 text-xl font-black text-white shadow-2xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                Send Response Now
+              </LoadingButton>
             </form>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )
 }
+

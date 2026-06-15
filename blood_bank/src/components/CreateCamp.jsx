@@ -1,269 +1,201 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createCamp } from '../api/campsApi'
+import { useAuth } from '../context/AuthContext'
+import { toast } from 'react-hot-toast'
+import LoadingButton from './ui/LoadingButton.jsx'
 
 export default function CreateCamp() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
-    type: 'Blood Donation',
+    title: '',
+    description: '',
     location: '',
     date: '',
-    time: '',
-    organizer: '',
-    contact: '',
-    description: '',
-    maxParticipants: ''
+    startTime: '',
+    endTime: '',
+    capacity: 50,
+    bannerImage: '',
+    organizerId: user?._id,
+    healthCheckup: false
   })
 
-  const [errors, setErrors] = useState({})
-
-  const validateForm = () => {
-    const newErrors = {}
-
-    if (!formData.name.trim()) newErrors.name = 'Camp name is required'
-    if (!formData.location.trim()) newErrors.location = 'Location is required'
-    if (!formData.date) newErrors.date = 'Date is required'
-    if (!formData.time) newErrors.time = 'Time is required'
-    if (!formData.organizer.trim()) newErrors.organizer = 'Organizer name is required'
-    if (!formData.contact.trim()) newErrors.contact = 'Contact is required'
-    if (!formData.description.trim()) newErrors.description = 'Description is required'
-    if (!formData.maxParticipants) newErrors.maxParticipants = 'Max participants is required'
-    if (formData.maxParticipants && parseInt(formData.maxParticipants) < 1) {
-      newErrors.maxParticipants = 'Max participants must be at least 1'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type, checked } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }))
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
-    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    if (validateForm()) {
-      try {
-        await createCamp(formData)
-        alert('Camp created successfully!')
-        navigate('/camps')
-      } catch (error) {
-        alert('Failed to create camp: ' + error.error)
-      }
+    setIsSubmitting(true)
+    try {
+      await createCamp(formData)
+      toast.success('Donation Camp hosted successfully!')
+      navigate('/camps')
+    } catch (error) {
+      toast.error('Failed to create camp: ' + (error.response?.data?.message || error.message))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-3xl">
-        {/* Header */}
-        <div className="mb-6 flex items-center gap-4 sm:mb-8">
-          <button
-            onClick={() => navigate('/camps')}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 transition shadow-sm"
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-slate-50 dark:bg-gray-900">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-6 mb-12">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] border border-slate-100 bg-white text-slate-600 shadow-xl shadow-slate-200/50 transition-all hover:-translate-x-1 hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:shadow-none"
           >
-            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Create New Camp</h1>
-            <p className="mt-1 text-sm text-slate-600">Fill in the details to create a new camp</p>
+            <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Host Donation Camp</h1>
+            <p className="mt-1 text-slate-500 font-medium">Empower your community through organized donation drives.</p>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-            {/* Camp Name */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-900">Camp Name *</label>
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-[3rem] border border-slate-100 dark:border-gray-700 p-10 shadow-2xl shadow-slate-200/50 dark:shadow-none space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Title */}
+            <div className="md:col-span-2 space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Camp Title</label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="title"
+                required
+                value={formData.title}
                 onChange={handleChange}
-                placeholder="e.g., Summer Blood Donation Drive"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.name
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
+                placeholder="e.g. Annual City Blood Drive 2024"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
               />
-              {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>
 
-            {/* Camp Type */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Camp Type *</label>
-              <select
-                name="type"
-                value={formData.type}
+            {/* Banner URL */}
+            <div className="md:col-span-2 space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Banner Image URL</label>
+              <input
+                type="url"
+                name="bannerImage"
+                value={formData.bannerImage}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/10"
-              >
-                <option value="Blood Donation">Blood Donation</option>
-                <option value="Health Checkup">Health Checkup</option>
-              </select>
+                placeholder="https://images.unsplash.com/photo-..."
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+              />
             </div>
 
             {/* Location */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Location *</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
               <input
                 type="text"
                 name="location"
+                required
                 value={formData.location}
                 onChange={handleChange}
-                placeholder="e.g., Downtown Community Center"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.location
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
+                placeholder="Full address or venue name"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
               />
-              {errors.location && <p className="mt-1 text-xs text-red-600">{errors.location}</p>}
+            </div>
+
+            {/* Capacity */}
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Donor Capacity</label>
+              <input
+                type="number"
+                name="capacity"
+                required
+                min="1"
+                value={formData.capacity}
+                onChange={handleChange}
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+              />
             </div>
 
             {/* Date */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Date *</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Event Date</label>
               <input
                 type="date"
                 name="date"
+                required
                 value={formData.date}
                 onChange={handleChange}
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.date
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
               />
-              {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date}</p>}
             </div>
 
-            {/* Time */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Time *</label>
-              <input
-                type="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.time
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
-              />
-              {errors.time && <p className="mt-1 text-xs text-red-600">{errors.time}</p>}
-            </div>
-
-            {/* Organizer */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Organizer Name *</label>
-              <input
-                type="text"
-                name="organizer"
-                value={formData.organizer}
-                onChange={handleChange}
-                placeholder="e.g., Red Cross"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.organizer
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
-              />
-              {errors.organizer && <p className="mt-1 text-xs text-red-600">{errors.organizer}</p>}
-            </div>
-
-            {/* Contact */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Contact Number *</label>
-              <input
-                type="tel"
-                name="contact"
-                value={formData.contact}
-                onChange={handleChange}
-                placeholder="e.g., +1 (555) 123-4567"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.contact
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
-              />
-              {errors.contact && <p className="mt-1 text-xs text-red-600">{errors.contact}</p>}
-            </div>
-
-            {/* Max Participants */}
-            <div>
-              <label className="block text-sm font-semibold text-slate-900">Max Participants *</label>
-              <input
-                type="number"
-                name="maxParticipants"
-                value={formData.maxParticipants}
-                onChange={handleChange}
-                placeholder="e.g., 100"
-                min="1"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 ${
-                  errors.maxParticipants
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
-              />
-              {errors.maxParticipants && <p className="mt-1 text-xs text-red-600">{errors.maxParticipants}</p>}
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-900">Description *</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe the camp details and objectives..."
-                rows="4"
-                className={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 resize-none ${
-                  errors.description
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10'
-                    : 'border-slate-300 focus:border-red-500 focus:ring-red-500/10'
-                }`}
-              />
-              {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
+            {/* Time Slot */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Start</label>
+                <input
+                  type="time"
+                  name="startTime"
+                  required
+                  value={formData.startTime}
+                  onChange={handleChange}
+                  className="w-full px-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">End</label>
+                <input
+                  type="time"
+                  name="endTime"
+                  required
+                  value={formData.endTime}
+                  onChange={handleChange}
+                  className="w-full px-4 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="mt-6 flex gap-3 border-t border-slate-200 pt-6 sm:gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/camps')}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-            >
-              Create Camp
-            </button>
+          {/* Description */}
+          <div className="space-y-3">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Campaign Description</label>
+            <textarea
+              name="description"
+              required
+              rows={4}
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="What should donors know about this camp?"
+              className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none"
+            />
           </div>
+
+          <div className="flex items-center gap-4 p-6 bg-slate-50 dark:bg-gray-900 rounded-3xl">
+            <input 
+              type="checkbox"
+              name="healthCheckup"
+              checked={formData.healthCheckup}
+              onChange={handleChange}
+              className="w-6 h-6 rounded-lg text-red-600 focus:ring-red-500 border-slate-300"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-black text-slate-900 dark:text-white">Include Free Health Checkup</span>
+              <span className="text-xs font-medium text-slate-500">Provide vitals and basic screening for all donors.</span>
+            </div>
+          </div>
+
+          <LoadingButton
+            type="submit"
+            loading={isSubmitting}
+            loadingText="Creating Campaign..."
+            className="w-full py-6 rounded-[2rem] bg-red-600 text-xl font-black text-white shadow-2xl shadow-red-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            Launch Donation Camp
+          </LoadingButton>
         </form>
       </div>
     </div>
   )
 }
+

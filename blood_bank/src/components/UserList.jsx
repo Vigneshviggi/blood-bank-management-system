@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchUsers } from '../api/userApi';
 import { useNavigate } from 'react-router-dom';
 import Card from './Card.jsx';
+import toast from 'react-hot-toast';
 
 const UserList = () => {
   const [users, setUsers] = useState([]);
@@ -12,7 +13,7 @@ const UserList = () => {
   useEffect(() => {
     fetchUsers()
       .then(setUsers)
-      .catch(err => setError(err.error || 'Failed to fetch users'))
+      .catch(err => toast.error(err.error || 'Failed to fetch users'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -32,12 +33,6 @@ const UserList = () => {
             Add New User
           </button>
         </div>
-
-        {error && (
-          <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600 dark:bg-red-900/20">
-            {error}
-          </div>
-        )}
 
         <Card className="overflow-hidden !p-0">
           <div className="overflow-x-auto">

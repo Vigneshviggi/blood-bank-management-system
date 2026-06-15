@@ -23,6 +23,32 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get a single donor by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const donor = await Donor.findById(req.params.id);
+    if (!donor) {
+      return res.status(404).json({ success: false, message: 'Donor not found' });
+    }
+    res.json(donor);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update donor details
+router.put('/:id', async (req, res) => {
+  try {
+    const donor = await Donor.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!donor) {
+      return res.status(404).json({ success: false, message: 'Donor not found' });
+    }
+    res.json({ success: true, message: 'Donor updated', data: donor });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 // Delete a donor
 router.delete('/:id', async (req, res) => {
   try {

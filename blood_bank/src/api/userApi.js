@@ -19,3 +19,12 @@ export const fetchUsers = async () => {
     throw error.response?.data || { error: error.message };
   }
 };
+
+export const fetchUserById = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: error.message };
+  }
+};

@@ -14,6 +14,8 @@ const campRoutes = require("./routes/campRoutes");
 const hospitalRoutes = require("./routes/hospitalRoutes");
 const responseRoutes = require("./routes/responseRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const heroRoutes = require("./routes/heroRoutes");
+const featureRoutes = require("./routes/featureRoutes");
 
 
 
@@ -77,6 +79,8 @@ app.use("/api/responses", responseRoutes);
 
 // Notification routes
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/hero", heroRoutes);
+app.use("/api/features", featureRoutes);
 
 
 

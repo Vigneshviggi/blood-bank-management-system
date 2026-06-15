@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Card from './Card.jsx'
+import toast from 'react-hot-toast'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
@@ -60,24 +61,26 @@ export default function AdminPanel() {
 
   const handlePromote = async (userId) => {
     if (!window.confirm('Are you sure you want to promote this user to Admin?')) return
+    const loadingToast = toast.loading('Promoting user...')
     try {
       await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, { role: 'admin' })
-      alert('User promoted to Admin! 👑')
+      toast.success('User promoted to Admin! 👑', { id: loadingToast })
       fetchAllData()
     } catch (error) {
-      alert('Promotion failed: ' + error.message)
+      toast.error('Promotion failed: ' + error.message, { id: loadingToast })
     }
   }
 
   const handleDelete = async (type, id) => {
     if (!window.confirm(`Are you sure you want to delete this ${type.slice(0, -1)}? This action cannot be undone.`)) return
     
+    const loadingToast = toast.loading('Deleting record...')
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/api/${type}/${id}`)
-      alert('Record deleted successfully from database! 🗑️')
+      toast.success('Record deleted successfully! 🗑️', { id: loadingToast })
       fetchAllData()
     } catch (error) {
-      alert('Delete failed: ' + error.message)
+      toast.error('Delete failed: ' + error.message, { id: loadingToast })
     }
   }
 
@@ -88,13 +91,14 @@ export default function AdminPanel() {
 
   const handleSaveEdit = async () => {
     const id = editingItem._id || editingItem.id;
+    const loadingToast = toast.loading('Saving changes...')
     try {
       await axios.put(`${import.meta.env.VITE_API_URL}/api/${activeTab}/${id}`, editFormData)
-      alert('Record updated in database successfully! ✅')
+      toast.success('Record updated successfully! ✅', { id: loadingToast })
       setEditingItem(null)
       fetchAllData()
     } catch (error) {
-      alert('Update failed: ' + error.message)
+      toast.error('Update failed: ' + error.message, { id: loadingToast })
     }
   }
 

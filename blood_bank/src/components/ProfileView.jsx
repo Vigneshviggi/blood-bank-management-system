@@ -1,28 +1,44 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useLocation, useParams, useNavigate } from 'react-router-dom'
+import BackButton from './BackButton.jsx'
+import { fetchDonorById } from '../api/donorsApi'
+import { fetchUserById } from '../api/userApi'
+import { toast } from 'react-hot-toast'
 
 export default function ProfileView() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState(() => location.state?.donor ? { ...location.state.donor, profileType: 'donor' } : null)
+  const [loading, setLoading] = useState(!location.state?.donor)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    if (location.state?.donor) {
+      setProfile({ ...location.state.donor, profileType: 'donor' })
+      setLoading(false)
+      return
+    }
+
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${id}`)
-        if (!response.ok) throw new Error('Profile not found')
-        const data = await response.json()
-        setProfile(data)
+        try {
+          const donor = await fetchDonorById(id)
+          setProfile({ ...donor, profileType: 'donor' })
+          return
+        } catch (donorError) {
+          const user = await fetchUserById(id)
+          if (!user) throw new Error('Profile not found')
+          setProfile({ ...user, profileType: user?.role || 'user' })
+        }
       } catch (err) {
-        setError(err.message)
+        setError(err.message || 'Profile not found')
       } finally {
         setLoading(false)
       }
     }
     fetchProfile()
-  }, [id])
+  }, [id, location.state])
 
   if (loading) return (
     <div className="flex h-96 items-center justify-center">
@@ -44,19 +60,26 @@ export default function ProfileView() {
 
   if (!profile) return null;
 
+  const handleContact = () => {
+    if (profile.phone) {
+      window.location.href = `tel:${profile.phone}`
+      return
+    }
+
+    if (profile.email) {
+      window.location.href = `mailto:${profile.email}`
+      return
+    }
+
+    toast.error('No contact details are available for this profile yet.')
+  }
+
   return (
     <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-4xl">
         {/* Header with Back Button */}
         <div className="mb-8 flex items-center gap-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 transition shadow-sm"
-          >
-            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          <BackButton />
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Profile Details</h1>
         </div>
 
@@ -68,7 +91,7 @@ export default function ProfileView() {
             {/* Profile Info */}
             <div className="relative -mt-16 flex flex-col items-center sm:-mt-24 sm:flex-row sm:items-end sm:gap-6">
               <div className="flex h-32 w-32 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-blue-400 to-blue-600 text-4xl font-bold text-white shadow-lg sm:h-48 sm:w-48">
-                {profile.name.charAt(0)}
+                {(profile.name || 'D').charAt(0)}
               </div>
               <div className="mt-4 flex-1 text-center sm:mb-4 sm:text-left">
                 <h2 className="text-3xl font-bold text-slate-900">{profile.name}</h2>
@@ -76,10 +99,10 @@ export default function ProfileView() {
               </div>
               <div className="mt-6 flex gap-3 sm:mb-4">
                 <button 
-                   onClick={() => navigate('/contact')}
+                   onClick={handleContact}
                    className="rounded-xl bg-red-600 px-8 py-3 font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-700 active:scale-95"
                 >
-                  Contact
+                  Contact {profile.profileType === 'donor' ? 'Donor' : 'Profile'}
                 </button>
               </div>
             </div>
@@ -98,7 +121,22 @@ export default function ProfileView() {
               </div>
               <div className="rounded-3xl bg-slate-50 p-6 text-center">
                 <p className="text-sm font-semibold text-slate-500 uppercase">Email</p>
-                <p className="mt-2 text-lg font-bold text-slate-900 truncate">{profile.email}</p>
+                <p className="mt-2 text-lg font-bold text-slate-900 truncate">{profile.email || 'Not shared'}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 sm:grid-cols-3">
+              <div className="rounded-3xl bg-slate-50 p-6 text-center">
+                <p className="text-sm font-semibold text-slate-500 uppercase">Phone</p>
+                <p className="mt-2 text-lg font-bold text-slate-900 truncate">{profile.phone || 'Not shared'}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-6 text-center">
+                <p className="text-sm font-semibold text-slate-500 uppercase">Donations</p>
+                <p className="mt-2 text-3xl font-bold text-red-600">{profile.donations ?? '—'}</p>
+              </div>
+              <div className="rounded-3xl bg-slate-50 p-6 text-center">
+                <p className="text-sm font-semibold text-slate-500 uppercase">Availability</p>
+                <p className="mt-2 text-lg font-bold text-slate-900">{profile.availability === false ? 'Unavailable' : 'Available'}</p>
               </div>
             </div>
 
@@ -107,9 +145,17 @@ export default function ProfileView() {
               <div>
                 <h3 className="text-xl font-bold text-slate-900">About</h3>
                 <p className="mt-3 text-slate-600 leading-relaxed">
-                  Dedicated {profile.role} committed to the LifeLink mission. Available for blood donations and emergency support in the {profile.location} area.
+                  {profile.bio || `Dedicated ${profile.profileType || 'member'} committed to the LifeLink mission. Available for blood donations and emergency support in the ${profile.location || 'their area'}.`}
                 </p>
               </div>
+              {profile.lastDonation && (
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Last Donation</h3>
+                  <p className="mt-3 text-slate-600 leading-relaxed">
+                    {new Date(profile.lastDonation).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

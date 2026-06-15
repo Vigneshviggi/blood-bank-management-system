@@ -46,4 +46,42 @@ router.get('/stock', async (req, res) => {
   }
 });
 
+// Get hospital by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id);
+    if (!hospital) return res.status(404).json({ success: false, message: 'Hospital not found' });
+    res.json(hospital);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update hospital details (stock, status, etc.)
+router.put('/:id', async (req, res) => {
+  try {
+    const updated = await Hospital.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+// Get hospital analytics
+router.get('/:id/analytics', async (req, res) => {
+  try {
+    const hospital = await Hospital.findById(req.params.id);
+    // In a real app, we'd query requests and camp data too
+    const analytics = {
+      stock: hospital.stock,
+      verified: hospital.verified,
+      recentActivity: [] // Placeholder
+    };
+    res.json(analytics);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
+

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { registerUser } from '../api/userApi';
 import { useNavigate } from 'react-router-dom';
 import Card from './Card.jsx';
+import toast from 'react-hot-toast';
 
 const initialState = {
   name: '',
@@ -15,8 +16,6 @@ const initialState = {
 
 const RegisterUser = () => {
   const [form, setForm] = useState(initialState);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -26,15 +25,14 @@ const RegisterUser = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
-    setError('');
     setLoading(true);
+    const loadingToast = toast.loading('Registering member...');
     try {
       const res = await registerUser(form);
-      setMessage(res.message || 'New user registered successfully!');
+      toast.success(res.message || 'New user registered successfully!', { id: loadingToast });
       setTimeout(() => navigate('/user-list'), 1500);
     } catch (err) {
-      setError(err.error || 'Registration failed. Please check your inputs.');
+      toast.error(err.error || 'Registration failed. Please check your inputs.', { id: loadingToast });
     } finally {
       setLoading(false);
     }
@@ -55,19 +53,6 @@ const RegisterUser = () => {
             <p className="mt-2 text-slate-600 dark:text-gray-400">Expand the LifeLink community network</p>
           </div>
         </div>
-
-        {message && (
-          <div className="mb-6 rounded-2xl bg-emerald-50 p-4 text-sm font-bold text-emerald-600 dark:bg-emerald-900/20 flex items-center gap-3">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-             {message}
-          </div>
-        )}
-        {error && (
-          <div className="mb-6 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600 dark:bg-red-900/20 flex items-center gap-3">
-             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-             {error}
-          </div>
-        )}
 
         <Card className="shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-gray-800">
           <form onSubmit={handleSubmit} className="space-y-6">

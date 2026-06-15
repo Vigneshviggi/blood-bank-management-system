@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../context/DarkModeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import toast from 'react-hot-toast'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -34,7 +35,7 @@ export default function Settings() {
   }
 
   const handleSave = () => {
-    alert('Settings saved successfully! (Demo Mode)')
+    toast.success('Settings saved successfully! (Demo Mode)')
   }
 
   const tabs = [

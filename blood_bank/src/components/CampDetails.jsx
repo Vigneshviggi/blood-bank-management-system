@@ -1,244 +1,223 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchCamps } from '../api/campsApi';
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { registerForCamp, fetchRegistrationStatus } from '../api/campsApi'
+import { useAuth } from '../context/AuthContext'
+import { useLoading } from '../context/LoadingContext'
+import { toast } from 'react-hot-toast'
+import axios from 'axios'
 
 export default function CampDetails() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [camp, setCamp] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [joined, setJoined] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(false);
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { showLoading, hideLoading } = useLoading()
+  
+  const [camp, setCamp] = useState(null)
+  const [registration, setRegistration] = useState(null)
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
-    const loadCamp = async () => {
-      setLoading(true);
+    const loadData = async () => {
       try {
-        const camps = await fetchCamps();
-        const found = camps.find(c => String(c._id || c.id) === id);
-        setCamp(found);
+        const [campData, regData] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/api/camps/${id}`).then(res => res.data),
+          user?.role === 'donor' ? fetchRegistrationStatus(id, user._id) : Promise.resolve(null)
+        ])
+        setCamp(campData)
+        setRegistration(regData)
       } catch (e) {
-        setCamp(null);
+        console.error("Failed to load camp details", e)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    loadCamp();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <span className="text-lg text-slate-600">Loading camp details...</span>
-      </div>
-    );
-  }
-
-  if (!camp) {
-    return (
-      <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-4xl">
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-            <h3 className="text-lg font-semibold text-slate-900">Camp not found</h3>
-            <p className="mt-1 text-slate-600">The camp you're looking for doesn't exist.</p>
-            <button
-              onClick={() => navigate('/camps')}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-            >
-              Back to Camps
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const handleJoinCamp = () => {
-    setJoined(true);
-    alert('Successfully joined the camp!');
-  };
-
-  const handleCancelRegistration = () => {
-    if (window.confirm('Are you sure you want to cancel your registration?')) {
-      setJoined(false);
-      alert('Your registration has been cancelled.');
     }
-  };
+    loadData()
+  }, [id, user])
+
+  const handleRegister = async () => {
+    showLoading('Securing your spot...')
+    try {
+      await registerForCamp(id, {
+        userId: user._id,
+        bloodGroup: user.bloodGroup,
+        contactInfo: user.phone
+      })
+      toast.success('Registration Confirmed! See you there ❤️')
+      // Refresh status
+      const [regData, campData] = await Promise.all([
+        fetchRegistrationStatus(id, user._id),
+        axios.get(`${import.meta.env.VITE_API_URL}/api/camps/${id}`).then(res => res.data)
+      ])
+      setRegistration(regData)
+      setCamp(campData)
+    } catch (error) {
+      toast.error(error.message || 'Registration failed')
+    } finally {
+      hideLoading()
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!window.confirm('Are you sure you want to cancel your registration?')) return
+    
+    showLoading('Cancelling registration...')
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/api/camps/${id}/register/${user._id}`)
+      toast.success('Registration cancelled')
+      setRegistration(null)
+      const campData = await axios.get(`${import.meta.env.VITE_API_URL}/api/camps/${id}`).then(res => res.data)
+      setCamp(campData)
+    } catch (error) {
+      toast.error('Failed to cancel')
+    } finally {
+      hideLoading()
+    }
+  }
+
+  if (loading) return null
+  
+  if (!camp) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900">
+      <div className="text-center space-y-4">
+        <div className="w-20 h-20 bg-red-50 dark:bg-red-900/10 rounded-full flex items-center justify-center mx-auto text-red-600">
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Camp Not Found</h2>
+        <p className="text-slate-500 font-medium max-w-xs mx-auto">This camp may have been archived or the ID is incorrect.</p>
+        <button onClick={() => navigate('/camps')} className="px-8 py-3 bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/20 hover:scale-105 transition">Discover Camps</button>
+      </div>
+    </div>
+  )
+
+  const isOrganizer = user?.role === 'admin' || camp.organizerId === user?._id || (user?.role === 'hospital' && camp.organizerId === user?._id)
 
   return (
-    <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-4xl">
-        {/* Back Button */}
-        <div className="mb-6 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/camps')}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-200 hover:bg-slate-100 transition shadow-sm"
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="flex items-center justify-between mb-10">
+          <button 
+            onClick={() => navigate(-1)}
+            className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] border border-slate-100 bg-white text-slate-600 shadow-xl shadow-slate-200/50 transition-all hover:-translate-x-1 hover:bg-slate-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:shadow-none"
           >
-            <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-xl font-bold text-slate-900">Camp Details</h1>
+          
+          {isOrganizer && (
+            <button 
+              onClick={() => navigate(`/camp-management/${id}`)}
+              className="px-8 py-4 rounded-2xl bg-emerald-600 text-white text-sm font-black shadow-lg shadow-emerald-500/20 hover:scale-105 transition"
+            >
+              Management Console
+            </button>
+          )}
         </div>
 
-        {/* Main Content */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column - Camp Details */}
-          <div className="lg:col-span-2">
-            {/* Camp Header Image */}
-            <div className={`h-64 rounded-2xl ${camp.image} mb-6 sm:h-80`} />
-
-            {/* Camp Info Card */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              <div className="mb-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{camp.name}</h1>
-                    <span className="mt-2 inline-block rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
-                      {camp.type}
-                    </span>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main Info */}
+          <div className="lg:col-span-2 space-y-10">
+            <div className="relative h-[25rem] rounded-[3rem] overflow-hidden shadow-2xl">
+              <img src={camp.bannerImage || 'https://images.unsplash.com/photo-1615461066159-fea0960485d5'} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-10 left-10 right-10">
+                <span className="px-4 py-2 bg-red-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full mb-4 inline-block">
+                  {camp.status}
+                </span>
+                <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">{camp.title}</h1>
               </div>
+            </div>
 
-              {/* Quick Info */}
-              <div className="mb-6 grid gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2">
-                <div className="flex gap-3">
-                  <svg className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-                    <circle cx="12" cy="10" r="3" />
-                  </svg>
+            <div className="bg-white dark:bg-gray-800 rounded-[3rem] p-10 border border-slate-100 dark:border-gray-700 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">About the Campaign</h2>
+              <p className="text-slate-600 dark:text-gray-400 font-medium leading-relaxed text-lg">
+                {camp.description}
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-10">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/10 flex items-center justify-center text-red-600 shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21z" fill="currentColor"/></svg>
+                  </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-600">Location</p>
-                    <p className="text-sm text-slate-900">{camp.location}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organizer</p>
+                    <p className="font-black text-slate-900 dark:text-white">Medical Network Authorized</p>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <svg className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 2" />
-                  </svg>
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center text-emerald-600 shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-600">Date & Time</p>
-                    <p className="text-sm text-slate-900">{camp.date} at {camp.time}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Timing</p>
+                    <p className="font-black text-slate-900 dark:text-white">{camp.startTime} - {camp.endTime}</p>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <svg className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-600">Organizer</p>
-                    <p className="text-sm text-slate-900">{camp.organizer}</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <svg className="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" />
-                  </svg>
-                  <div>
-                    <p className="text-xs font-semibold text-slate-600">Contact</p>
-                    <p className="text-sm text-slate-900">{camp.contact}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900 sm:text-base">About this Camp</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{camp.description}</p>
-              </div>
-
-              {/* Participation Info */}
-              <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-900">Participation</span>
-                  <span className="text-sm font-semibold text-slate-600">
-                    {camp.participants}/{camp.maxParticipants}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-300">
-                  <div
-                    className="h-2 rounded-full bg-red-600"
-                    style={{ width: `${(camp.participants / camp.maxParticipants) * 100}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  {camp.maxParticipants - camp.participants} spots available
-                </p>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Actions */}
-          <div className="lg:col-span-1">
-            {/* Join/Cancel Button */}
-            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              {joined ? (
-                <>
-                  <div className="mb-4 rounded-lg bg-green-50 p-3 text-center">
-                    <p className="text-sm font-semibold text-green-700">✓ You have joined this camp</p>
-                  </div>
-                  <button
-                    onClick={handleCancelRegistration}
-                    className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-                  >
-                    Cancel Registration
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleJoinCamp}
-                  disabled={camp.participants >= camp.maxParticipants}
-                  className={`w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition ${
-                    camp.participants >= camp.maxParticipants
-                      ? 'bg-slate-400 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                >
-                  {camp.participants >= camp.maxParticipants ? 'Camp Full' : 'Join Camp'}
-                </button>
-              )}
-            </div>
-
-            {/* Participants List */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              <button
-                onClick={() => setShowParticipants(!showParticipants)}
-                className="mb-4 flex w-full items-center justify-between text-sm font-semibold text-slate-900"
-              >
-                <span>Participants {(camp.participantsList?.length || 0)}</span>
-                <svg
-                  className={`h-5 w-5 transition ${showParticipants ? 'rotate-180' : ''}`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-
-              {showParticipants && (
-                <div className="space-y-3 border-t border-slate-200 pt-4">
-                  {(camp.participantsList || []).map(participant => (
-                    <div key={participant.id} className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{participant.name}</p>
-                        <p className="text-xs text-slate-600">{participant.status}</p>
-                      </div>
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                        participant.status === 'Confirmed'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {participant.status}
-                      </span>
-                    </div>
-                  ))}
+          {/* Sidebar Info */}
+          <div className="space-y-8">
+            <div className="bg-white dark:bg-gray-800 rounded-[3rem] p-10 border border-slate-100 dark:border-gray-700 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] bg-red-50 dark:bg-red-900/10 mb-6">
+                  <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </div>
-              )}
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">{camp.location}</h3>
+                <p className="mt-2 text-slate-500 font-bold uppercase tracking-tighter">{new Date(camp.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+
+              <div className="space-y-6 pt-8 border-t border-slate-50 dark:border-gray-700">
+                <div className="flex justify-between items-end">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Spots</span>
+                  <span className="text-2xl font-black text-red-600">{camp.capacity - camp.registeredCount}</span>
+                </div>
+                <div className="h-3 bg-slate-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-red-600" style={{ width: `${(camp.registeredCount / camp.capacity) * 100}%` }} />
+                </div>
+              </div>
+
+              <div className="mt-10">
+                {user?.role === 'donor' ? (
+                  registration ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-2xl text-center">
+                        <p className="text-sm font-black text-emerald-600">You're Registered!</p>
+                      </div>
+                      <button 
+                        onClick={handleCancel}
+                        className="w-full py-4 rounded-2xl bg-slate-100 dark:bg-gray-700 text-slate-600 dark:text-gray-300 text-xs font-black uppercase tracking-widest hover:bg-slate-200 transition"
+                      >
+                        Cancel Registration
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleRegister}
+                      disabled={camp.registeredCount >= camp.capacity}
+                      className="w-full py-5 rounded-[2rem] bg-red-600 text-white text-lg font-black shadow-xl shadow-red-500/30 hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50"
+                    >
+                      {camp.registeredCount >= camp.capacity ? 'Camp Full' : 'Register Now'}
+                    </button>
+                  )
+                ) : (
+                  <p className="text-center text-slate-400 text-xs font-bold uppercase">Sign in as donor to register</p>
+                )}
+              </div>
             </div>
+
+            {camp.healthCheckup && (
+              <div className="bg-emerald-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-emerald-500/20">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <h4 className="font-black uppercase tracking-tight">Free Health Checkup</h4>
+                </div>
+                <p className="text-sm font-medium opacity-80 leading-relaxed">
+                  Every donor receives a complimentary vitals checkup and health report.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
