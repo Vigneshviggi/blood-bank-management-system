@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { Colors } from '../../constants/Theme';
+import { Colors, Radius, Shadows } from '../../constants/Theme';
 
 const GlassCard = ({ children, style, intensity = 80, tint = 'light' }) => {
   if (Platform.OS === 'web') {
@@ -21,21 +21,18 @@ const GlassCard = ({ children, style, intensity = 80, tint = 'light' }) => {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: Radius.xl,
+    padding: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 5,
+    borderColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: Colors.surface,
+    ...Shadows.soft,
   },
   webCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    backdropFilter: 'blur(10px)',
-  }
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    backdropFilter: 'blur(14px)',
+  },
 });
 
 export default GlassCard;

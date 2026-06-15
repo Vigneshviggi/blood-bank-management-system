@@ -5,6 +5,7 @@ import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
 import { Users, Hospital, Activity, ShieldCheck, AlertCircle, BarChart3 } from 'lucide-react-native';
+import Badge from '../components/ui/Badge';
 
 const AdminDashboard = ({ navigation }) => {
   const [stats, setStats] = useState({
@@ -37,7 +38,7 @@ const AdminDashboard = ({ navigation }) => {
         totalUsers: users.filter(u => u.role === 'user' || u.role === 'donor').length,
         totalHospitals: hospitals.length,
         pendingVerifications: hospitals.filter(h => !h.verified).length,
-        activeRequests: requests.filter(r => r.status === 'open').length,
+        activeRequests: requests.filter(r => r.status === 'Pending').length,
         totalDonations: 0 // Placeholder
       });
     } catch (err) {
@@ -62,69 +63,79 @@ const AdminDashboard = ({ navigation }) => {
   }
 
   return (
-    <ScreenContainer scrollable={true}>
-      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>System Admin</Text>
-          <Text style={styles.nameText}>Platform Overview</Text>
+    <ScreenContainer scrollable={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.welcomeText}>System Admin</Text>
+            <Text style={styles.nameText}>Platform Overview</Text>
+            <Text style={styles.subtitle}>Monitor users, hospitals, requests and safety signals in one place.</Text>
+          </View>
+          <Badge label="Admin Verified" variant="success" />
         </View>
-        <View style={styles.adminBadge}>
-          <ShieldCheck size={20} color={Colors.success} />
-          <Text style={styles.adminBadgeText}>Verified Admin</Text>
+
+        <View style={styles.statsGrid}>
+          <GlassCard style={styles.statBox}>
+            <Users size={24} color={Colors.accent} />
+            <Text style={styles.statValue}>{stats.totalUsers}</Text>
+            <Text style={styles.statLabel}>Donors</Text>
+          </GlassCard>
+          <GlassCard style={styles.statBox}>
+            <Hospital size={24} color={Colors.primary} />
+            <Text style={styles.statValue}>{stats.totalHospitals}</Text>
+            <Text style={styles.statLabel}>Hospitals</Text>
+          </GlassCard>
         </View>
-      </View>
 
-      <View style={styles.statsGrid}>
-        <GlassCard style={styles.statBox}>
-          <Users size={24} color={Colors.accent} />
-          <Text style={styles.statValue}>{stats.totalUsers}</Text>
-          <Text style={styles.statLabel}>Donors</Text>
+        <View style={styles.statsGrid}>
+          <GlassCard style={styles.statBox}>
+            <Activity size={24} color={Colors.warning} />
+            <Text style={styles.statValue}>{stats.activeRequests}</Text>
+            <Text style={styles.statLabel}>Live Requests</Text>
+          </GlassCard>
+          <GlassCard style={styles.statBox}>
+            <AlertCircle size={24} color={Colors.error} />
+            <Text style={styles.statValue}>{stats.pendingVerifications}</Text>
+            <Text style={styles.statLabel}>Pending Verification</Text>
+          </GlassCard>
+        </View>
+
+        <GlassCard style={styles.heroCard}>
+          <View style={styles.heroTopRow}>
+            <ShieldCheck size={20} color={Colors.success} />
+            <Text style={styles.heroTitle}>Emergency Monitoring</Text>
+          </View>
+          <Text style={styles.heroText}>Review system health, hospital verification and demand spikes without leaving the dashboard.</Text>
         </GlassCard>
-        <GlassCard style={styles.statBox}>
-          <Hospital size={24} color={Colors.primary} />
-          <Text style={styles.statValue}>{stats.totalHospitals}</Text>
-          <Text style={styles.statLabel}>Hospitals</Text>
-        </GlassCard>
-      </View>
 
-      <View style={styles.statsGrid}>
-        <GlassCard style={styles.statBox}>
-          <Activity size={24} color={Colors.warning} />
-          <Text style={styles.statValue}>{stats.activeRequests}</Text>
-          <Text style={styles.statLabel}>Live Requests</Text>
-        </GlassCard>
-        <GlassCard style={styles.statBox}>
-          <AlertCircle size={24} color={Colors.error} />
-          <Text style={styles.statValue}>{stats.pendingVerifications}</Text>
-          <Text style={styles.statLabel}>Pending Verification</Text>
-        </GlassCard>
-      </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Management Console</Text>
+        </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Management Console</Text>
-      </View>
+        <View style={styles.consoleGrid}>
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('UsersManagement')}>
+            <Users size={32} color={Colors.primary} />
+            <Text style={styles.consoleText}>User List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('HospitalsManagement')}>
+            <Hospital size={32} color={Colors.primary} />
+            <Text style={styles.consoleText}>Hospital List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('MonitoringScreen')}>
+            <Activity size={32} color={Colors.primary} />
+            <Text style={styles.consoleText}>Live Activity</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('ReportsScreen')}>
+            <BarChart3 size={32} color={Colors.primary} />
+            <Text style={styles.consoleText}>System Reports</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.consoleGrid}>
-        <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('UsersManagement')}>
-          <Users size={32} color={Colors.primary} />
-          <Text style={styles.consoleText}>User List</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('HospitalsManagement')}>
-          <Hospital size={32} color={Colors.primary} />
-          <Text style={styles.consoleText}>Hospital List</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('MonitoringScreen')}>
-          <Activity size={32} color={Colors.primary} />
-          <Text style={styles.consoleText}>Live Activity</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('ReportsScreen')}>
-          <BarChart3 size={32} color={Colors.primary} />
-          <Text style={styles.consoleText}>System Reports</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
+      </ScrollView>
     </ScreenContainer>
   );
 };
@@ -138,8 +149,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 24,
+  },
+  headerCopy: {
+    flex: 1,
+    paddingRight: 12,
   },
   welcomeText: {
     fontSize: 16,
@@ -150,19 +165,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.text,
   },
-  adminBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(67, 160, 71, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  adminBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.success,
-    marginLeft: 6,
+  subtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -176,7 +183,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   statValue: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
     marginTop: 10,
@@ -185,6 +192,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  heroCard: {
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  heroTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  heroText: {
+    marginTop: 10,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
   sectionHeader: {
     marginTop: 24,
@@ -204,7 +230,7 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: '#fff',
     borderRadius: 24,
-    padding: 24,
+    padding: 22,
     alignItems: 'center',
     marginBottom: 16,
     shadowColor: '#000',

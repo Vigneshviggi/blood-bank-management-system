@@ -3,11 +3,18 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } fr
 import { AuthContext } from '../context/AuthContext';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
+import Badge from '../components/ui/Badge';
 import { Colors } from '../constants/Theme';
-import { User, Mail, Phone, MapPin, Droplets, LogOut, Settings, ChevronRight, History, Calendar } from 'lucide-react-native';
+import { User, Mail, Phone, MapPin, Droplets, LogOut, Settings, ChevronRight, History, Calendar, Award, ShieldCheck, HeartPulse } from 'lucide-react-native';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useContext(AuthContext);
+  const verificationBadge = user?.verified ? 'Verified' : user?.role === 'hospital' ? 'Hospital Verified' : 'Donor Verified';
+  const stats = [
+    { label: 'Donations', value: user?.donations || '12' },
+    { label: 'Responses', value: user?.responses || '8' },
+    { label: 'Certs', value: user?.certificates || '3' },
+  ];
 
   const handleLogout = () => {
     Alert.alert(
@@ -45,6 +52,7 @@ const ProfileScreen = ({ navigation }) => {
           style={styles.avatar} 
         />
         <Text style={styles.name}>{user?.name}</Text>
+        <Badge label={verificationBadge} variant={user?.verified ? 'success' : user?.role === 'hospital' ? 'info' : 'primary'} style={styles.verificationBadge} />
         <Text style={styles.role}>{user?.role?.toUpperCase()}</Text>
         
         {user?.role !== 'hospital' && (
@@ -67,6 +75,27 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.detailRow}>
           <MapPin size={18} color={Colors.primary} />
           <Text style={styles.detailText}>{user?.location || 'No location set'}</Text>
+        </View>
+      </GlassCard>
+
+      <View style={styles.statsRow}>
+        {stats.map((item) => (
+          <GlassCard key={item.label} style={styles.statCard}>
+            <Text style={styles.statValue}>{item.value}</Text>
+            <Text style={styles.statLabel}>{item.label}</Text>
+          </GlassCard>
+        ))}
+      </View>
+
+      <GlassCard style={styles.achievementsCard}>
+        <View style={styles.achievementsHeader}>
+          <Award size={18} color={Colors.primary} />
+          <Text style={styles.achievementsTitle}>Achievements</Text>
+        </View>
+        <View style={styles.achievementRow}>
+          <Badge label="Fast Responder" variant="success" />
+          <Badge label="Community Hero" variant="info" />
+          <Badge label="Life Saver" variant="warning" />
         </View>
       </GlassCard>
 
@@ -125,6 +154,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     letterSpacing: 1,
   },
+  verificationBadge: {
+    marginTop: 10,
+    marginBottom: 2,
+  },
   bloodBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,6 +175,46 @@ const styles = StyleSheet.create({
   },
   detailsCard: {
     marginBottom: 32,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 18,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  statLabel: {
+    marginTop: 4,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '700',
+  },
+  achievementsCard: {
+    marginBottom: 32,
+  },
+  achievementsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  achievementsTitle: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  achievementRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   detailRow: {
     flexDirection: 'row',

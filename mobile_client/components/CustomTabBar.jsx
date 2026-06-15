@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 
 const icons = {
   Home: 'home',
@@ -50,7 +51,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                 <Ionicons
                   name={icons[route.name]}
                   size={28}
-                  color={isFocused ? '#e53935' : '#888'}
+                  color={isFocused ? Colors.primary : Colors.textMuted}
                   style={isFocused ? styles.activeIcon : styles.icon}
                 />
                 <Text style={[styles.label, isFocused && styles.activeLabel]}>{label}</Text>
@@ -66,32 +67,33 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 24,
-    borderRadius: 32,
+    left: 14,
+    right: 14,
+    bottom: 18,
+    borderRadius: Radius.xl,
     overflow: 'hidden',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: 'transparent',
+    ...Shadows.strong,
   },
   blur: {
-    borderRadius: 32,
+    borderRadius: Radius.xl,
   },
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   tab: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: Radius.lg,
   },
   icon: {
     marginBottom: 2,
@@ -104,12 +106,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#888',
-    fontWeight: '500',
+    color: Colors.textMuted,
+    fontWeight: '700',
+    fontFamily: Typography.heading,
   },
   activeLabel: {
-    color: '#e53935',
-    fontWeight: '700',
+    color: Colors.primary,
+    fontWeight: '800',
   },
 });
 

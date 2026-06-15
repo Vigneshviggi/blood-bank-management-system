@@ -1,18 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Colors } from '../constants/Theme';
 
 const EmergencyBadge = ({ level }) => {
-  let color = '#e53935';
+  const normalized = String(level || 'normal').toLowerCase();
+  let color = Colors.primary;
   let label = 'Normal';
-  if (level === 'high') {
-    color = '#d32f2f';
+  if (normalized === 'critical') {
+    color = '#B42318';
+    label = 'Critical';
+  } else if (normalized === 'high' || normalized === 'urgent') {
+    color = '#E07A00';
     label = 'High';
-  } else if (level === 'medium') {
-    color = '#fbc02d';
+  } else if (normalized === 'medium') {
+    color = '#F79009';
     label = 'Medium';
-  } else if (level === 'low') {
-    color = '#43a047';
-    label = 'Low';
   }
   return (
     <View style={[styles.badge, { backgroundColor: color }]}> 
@@ -23,9 +25,9 @@ const EmergencyBadge = ({ level }) => {
 
 const styles = StyleSheet.create({
   badge: {
-    borderRadius: 8,
+    borderRadius: 999,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     alignItems: 'center',
   },
   text: {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, Text, StyleSheet } from 'react-native';
-import { Colors } from '../../constants/Theme';
+import { Colors, Radius, Typography } from '../../constants/Theme';
 
 const Input = ({ label, error, ...props }) => {
   return (
@@ -20,22 +20,25 @@ const Input = ({ label, error, ...props }) => {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
+    fontWeight: '700',
+    color: Colors.textSecondary,
     marginBottom: 8,
     marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontFamily: Typography.heading,
   },
   inputContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    height: 52,
+    minHeight: 54,
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
@@ -45,6 +48,8 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 16,
     color: Colors.text,
+    fontFamily: Typography.body,
+    paddingVertical: 12,
   },
   errorText: {
     color: Colors.error,

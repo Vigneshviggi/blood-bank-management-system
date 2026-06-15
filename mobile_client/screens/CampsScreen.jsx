@@ -6,6 +6,7 @@ import api from '../services/api';
 import { Colors } from '../constants/Theme';
 import GlassCard from '../components/ui/GlassCard';
 import { Ionicons } from '@expo/vector-icons';
+import Badge from '../components/ui/Badge';
 
 const CampsScreen = ({ navigation }) => {
   const [camps, setCamps] = useState([]);
@@ -35,8 +36,12 @@ const CampsScreen = ({ navigation }) => {
 
   return (
     <ScreenContainer scrollable={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Blood Donation Camps</Text>
+      <View style={styles.heroCard}>
+        <View style={styles.heroText}>
+          <Text style={styles.title}>Blood Donation Camps</Text>
+          <Text style={styles.subtitle}>Discover upcoming donation drives, see attendance and register instantly.</Text>
+        </View>
+        <Badge label="Live" variant="success" />
       </View>
 
       <FlatList
@@ -67,18 +72,37 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
   },
+  heroCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroText: {
+    flex: 1,
+    paddingRight: 12,
+  },
   title: {
     fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
   },
+  subtitle: {
+    marginTop: 6,
+    color: Colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 120,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 40,
+    padding: 32,
+    marginTop: 24,
   },
   emptyText: {
     color: Colors.textSecondary,

@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../screens/user/HomeScreen';
 import RequestsScreen from '../screens/user/RequestsScreen';
+import MyResponsesScreen from '../screens/user/MyResponsesScreen';
+import CompletedRequestsScreen from '../screens/user/CompletedRequestsScreen';
 import CampsScreen from '../screens/CampsScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -25,6 +27,8 @@ const HomeStack = () => (
 const RequestsStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="RequestsScreen" component={RequestsScreen} />
+    <Stack.Screen name="MyResponses" component={MyResponsesScreen} />
+    <Stack.Screen name="CompletedRequests" component={CompletedRequestsScreen} />
     <Stack.Screen name="RequestDetails" component={RequestDetailsScreen} />
   </Stack.Navigator>
 );

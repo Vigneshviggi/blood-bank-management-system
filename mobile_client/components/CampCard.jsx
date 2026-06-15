@@ -3,8 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import GlassCard from './ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import { MapPin, Calendar, Users, Info } from 'lucide-react-native';
+import Badge from './ui/Badge';
 
 const CampCard = ({ camp, onPress, onRegister, isOrganizer = false }) => {
+  const capacity = Number(camp.capacity || 0);
+  const registered = Number(camp.registeredCount || 0);
+  const occupancy = capacity > 0 ? Math.min(100, Math.round((registered / capacity) * 100)) : 0;
+
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
       <GlassCard style={styles.card}>
@@ -13,7 +18,10 @@ const CampCard = ({ camp, onPress, onRegister, isOrganizer = false }) => {
           style={styles.banner} 
         />
         <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={1}>{camp.title}</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title} numberOfLines={1}>{camp.title}</Text>
+            <Badge label={camp.healthCheckup ? 'Health Check' : 'Open Camp'} variant={camp.healthCheckup ? 'success' : 'primary'} />
+          </View>
           
           <View style={styles.infoRow}>
             <MapPin size={14} color={Colors.textSecondary} />
@@ -28,10 +36,15 @@ const CampCard = ({ camp, onPress, onRegister, isOrganizer = false }) => {
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Users size={14} color={Colors.primary} />
-              <Text style={styles.statText}>{camp.registeredCount || 0} Registered</Text>
+              <Text style={styles.statText}>{registered} Registered</Text>
             </View>
-            <Text style={styles.capacityText}>Capacity: {camp.capacity}</Text>
+            <Text style={styles.capacityText}>Capacity: {capacity || 'Unlimited'}</Text>
           </View>
+
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${occupancy}%` }]} />
+          </View>
+          <Text style={styles.progressLabel}>{occupancy}% filled</Text>
 
           {onRegister && (
             <TouchableOpacity style={styles.registerBtn} onPress={onRegister}>
@@ -65,11 +78,17 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: '800',
     color: Colors.text,
-    marginBottom: 8,
   },
   infoRow: {
     flexDirection: 'row',
@@ -103,6 +122,24 @@ const styles = StyleSheet.create({
   capacityText: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(217, 45, 32, 0.08)',
+    overflow: 'hidden',
+    marginTop: 10,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
+  },
+  progressLabel: {
+    marginTop: 6,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '700',
   },
   registerBtn: {
     backgroundColor: Colors.primary,

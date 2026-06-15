@@ -6,6 +6,7 @@ import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
 import { Beaker, Megaphone, PlusCircle, Activity, ChevronRight, AlertTriangle } from 'lucide-react-native';
+import Badge from '../components/ui/Badge';
 
 const HospitalDashboard = ({ navigation }) => {
   const { user } = useContext(AuthContext);
@@ -82,53 +83,64 @@ const HospitalDashboard = ({ navigation }) => {
   }
 
   return (
-    <ScreenContainer scrollable={true}>
-      <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Hospital Portal</Text>
-          <Text style={styles.nameText}>{user?.name}</Text>
+    <ScreenContainer scrollable={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <Text style={styles.welcomeText}>Hospital Portal</Text>
+            <Text style={styles.nameText}>{user?.name}</Text>
+            <Text style={styles.subtitle}>Manage inventory, blood demand and camp coordination from one command center.</Text>
+          </View>
+          <Badge label={user?.verified ? 'Verified' : 'Pending'} variant={user?.verified ? 'success' : 'warning'} />
         </View>
-        <View style={[styles.statusBadge, user?.verified ? styles.verified : styles.unverified]}>
-          <Text style={styles.statusText}>{user?.verified ? 'Verified' : 'Pending'}</Text>
+
+        <View style={styles.statsRow}>
+          <GlassCard style={styles.statBox}>
+            <Activity size={24} color={Colors.primary} />
+            <Text style={styles.statValue}>{data.activeRequests}</Text>
+            <Text style={styles.statLabel}>Active Requests</Text>
+          </GlassCard>
+          <GlassCard style={styles.statBox}>
+            <Megaphone size={24} color={Colors.accent} />
+            <Text style={styles.statValue}>{data.upcomingCamps}</Text>
+            <Text style={styles.statLabel}>My Camps</Text>
+          </GlassCard>
         </View>
-      </View>
 
-      <View style={styles.statsRow}>
-        <GlassCard style={styles.statBox}>
-          <Activity size={24} color={Colors.primary} />
-          <Text style={styles.statValue}>{data.activeRequests}</Text>
-          <Text style={styles.statLabel}>Active Requests</Text>
+        <GlassCard style={styles.alertCard}>
+          <View style={styles.alertHeader}>
+            <AlertTriangle size={18} color={Colors.warning} />
+            <Text style={styles.alertTitle}>Emergency Readiness</Text>
+          </View>
+          <Text style={styles.alertText}>Keep your stock levels current to reduce response time for high-priority requests.</Text>
         </GlassCard>
-        <GlassCard style={styles.statBox}>
-          <Megaphone size={24} color={Colors.accent} />
-          <Text style={styles.statValue}>{data.upcomingCamps}</Text>
-          <Text style={styles.statLabel}>My Camps</Text>
-        </GlassCard>
-      </View>
 
-      {renderInventorySummary()}
+        {renderInventorySummary()}
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Quick Management</Text>
-      </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Quick Management</Text>
+        </View>
 
-      <View style={styles.actionGrid}>
-        <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('CreateRequest')}>
-          <PlusCircle size={32} color={Colors.primary} />
-          <Text style={styles.actionText}>New Request</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Inventory')}>
-          <Beaker size={32} color={Colors.primary} />
-          <Text style={styles.actionText}>Stock Update</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Camps')}>
-          <Megaphone size={32} color={Colors.primary} />
-          <Text style={styles.actionText}>Organize Camp</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.actionGrid}>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('CreateRequest')}>
+            <PlusCircle size={32} color={Colors.primary} />
+            <Text style={styles.actionText}>New Request</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Inventory')}>
+            <Beaker size={32} color={Colors.primary} />
+            <Text style={styles.actionText}>Stock Update</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Camps')}>
+            <Megaphone size={32} color={Colors.primary} />
+            <Text style={styles.actionText}>Organize Camp</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
+      </ScrollView>
     </ScreenContainer>
   );
 };
@@ -142,8 +154,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 24,
+  },
+  headerCopy: {
+    flex: 1,
+    paddingRight: 12,
   },
   welcomeText: {
     fontSize: 16,
@@ -154,21 +170,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.text,
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  verified: {
-    backgroundColor: 'rgba(67, 160, 71, 0.1)',
-  },
-  unverified: {
-    backgroundColor: 'rgba(251, 140, 0, 0.1)',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.text,
+  subtitle: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
   statsRow: {
     flexDirection: 'row',
@@ -190,6 +196,24 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  alertCard: {
+    marginBottom: 24,
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  alertText: {
+    marginTop: 8,
+    color: Colors.textSecondary,
+    lineHeight: 20,
   },
   inventoryCard: {
     marginBottom: 24,

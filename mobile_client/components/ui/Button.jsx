@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/Theme';
+import { Colors, Radius, Shadows, Typography } from '../../constants/Theme';
 
 const Button = ({ title, onPress, loading, variant = 'primary', style }) => {
   const isSecondary = variant === 'secondary';
@@ -31,16 +31,13 @@ const Button = ({ title, onPress, loading, variant = 'primary', style }) => {
 const styles = StyleSheet.create({
   button: {
     backgroundColor: Colors.primary,
-    height: 52,
-    borderRadius: 16,
+    minHeight: 54,
+    borderRadius: Radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingHorizontal: 18,
+    ...Shadows.medium,
   },
   secondary: {
     backgroundColor: Colors.secondary,
@@ -56,7 +53,9 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.2,
+    fontFamily: Typography.heading,
   },
   textOutline: {
     color: Colors.primary,

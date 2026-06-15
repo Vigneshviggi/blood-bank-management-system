@@ -6,12 +6,13 @@ import api from '../../services/api';
 import { Colors } from '../../constants/Theme';
 import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '../../components/ui/GlassCard';
+import Badge from '../../components/ui/Badge';
 
 const RequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('all'); // all, emergency, nearby
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchRequests();
@@ -36,26 +37,54 @@ const RequestsScreen = ({ navigation }) => {
 
   const renderFilter = () => (
     <View style={styles.filterContainer}>
-      {['all', 'emergency', 'nearby'].map((f) => (
+      {[
+        { key: 'all', label: 'All' },
+        { key: 'high', label: 'High' },
+        { key: 'critical', label: 'Critical' },
+        { key: 'pending', label: 'Pending' },
+      ].map((option) => (
         <TouchableOpacity 
-          key={f}
-          style={[styles.filterBtn, filter === f && styles.filterBtnActive]}
-          onPress={() => setFilter(f)}
+          key={option.key}
+          style={[styles.filterBtn, filter === option.key && styles.filterBtnActive]}
+          onPress={() => setFilter(option.key)}
         >
-          <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+          <Text style={[styles.filterText, filter === option.key && styles.filterTextActive]}>
+            {option.label}
           </Text>
         </TouchableOpacity>
       ))}
     </View>
   );
 
+  const filteredRequests = requests.filter((request) => {
+    if (filter === 'all') return true;
+    if (filter === 'pending') return String(request.status || 'Pending') === 'Pending';
+    return String(request.emergencyLevel || '').toLowerCase() === filter;
+  });
+
   return (
     <ScreenContainer scrollable={false}>
+      <View style={styles.heroCard}>
+        <View style={styles.heroTextWrap}>
+          <Text style={styles.heroTitle}>Emergency Requests</Text>
+          <Text style={styles.heroSubtitle}>Browse urgent blood requests and respond in seconds.</Text>
+        </View>
+        <Badge label={`${requests.length} Live`} variant="primary" />
+      </View>
+
+      <View style={styles.quickRow}>
+        <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('MyResponses')}>
+          <Text style={styles.quickChipText}>My Responses</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('CompletedRequests')}>
+          <Text style={styles.quickChipText}>Completed</Text>
+        </TouchableOpacity>
+      </View>
+
       {renderFilter()}
 
       <FlatList
-        data={requests}
+        data={filteredRequests}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <RequestCard 
@@ -82,18 +111,21 @@ const styles = StyleSheet.create({
   filterContainer: {
     flexDirection: 'row',
     marginBottom: 20,
-    backgroundColor: '#eee',
-    borderRadius: 12,
-    padding: 4,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   filterBtn: {
-    flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   filterBtnActive: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
     elevation: 2,
   },
   filterText: {
@@ -102,15 +134,55 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   filterTextActive: {
+    color: '#fff',
+  },
+  heroCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 28,
+    padding: 18,
+    marginBottom: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroTextWrap: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  heroTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  heroSubtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  quickChip: {
+    flex: 1,
+    backgroundColor: 'rgba(217, 45, 32, 0.08)',
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  quickChipText: {
     color: Colors.primary,
+    fontWeight: '800',
+    fontSize: 13,
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 120,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: 40,
-    marginTop: 40,
+    padding: 32,
+    marginTop: 24,
   },
   emptyText: {
     color: Colors.textSecondary,
