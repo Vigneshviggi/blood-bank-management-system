@@ -41,9 +41,9 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
-      const res = await api.get('/api/notifications');
+      const res = await api.get('/api/notifications', { params: { userId: user?._id } });
       setNotifications(res.data);
-      setUnreadCount(res.data.filter((n) => !n.read).length);
+      setUnreadCount(res.data.filter((n) => !n.isRead && !n.read).length);
     } catch (err) {
       console.error('Error fetching notifications', err);
     }
@@ -51,9 +51,9 @@ export const NotificationProvider = ({ children }) => {
 
   const markAsRead = async (id) => {
     try {
-      await api.put(`/api/notifications/${id}/read`);
+      await api.put(`/api/notifications/read/${id}`);
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n._id === id ? { ...n, read: true, isRead: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {

@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       const newSocket = io('https://blood-bank-management-system-a2vx.onrender.com', {
-        query: { userId: user.id },
+        query: { userId: user._id || user.id },
       });
 
       setSocket(newSocket);

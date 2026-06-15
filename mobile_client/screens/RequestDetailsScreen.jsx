@@ -28,7 +28,7 @@ const RequestDetailsScreen = ({ route, navigation }) => {
     try {
       await api.post(`/api/requests/${request._id}/respond`, {
         ...response,
-        responderId: user._id,
+        responderId: user._id || user.id,
         responderName: user.name || 'Anonymous Donor'
       });
       await fetchRequest();

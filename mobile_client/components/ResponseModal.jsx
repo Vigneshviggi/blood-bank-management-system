@@ -6,12 +6,12 @@ const ResponseModal = ({ visible, onClose, onSubmit, request }) => {
   const [note, setNote] = useState('');
 
   const handleAccept = () => {
-    onSubmit({ status: 'accepted', eta, note });
+    onSubmit({ status: 'Accepted', eta, note });
     setEta('');
     setNote('');
   };
   const handleReject = () => {
-    onSubmit({ status: 'rejected', note });
+    onSubmit({ status: 'Rejected', note });
     setEta('');
     setNote('');
   };

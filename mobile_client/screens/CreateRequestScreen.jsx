@@ -13,30 +13,41 @@ const priorityLevels = ['normal', 'urgent', 'critical'];
 const CreateRequestScreen = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
-    patientName: '',
     bloodGroup: '',
     units: '',
     location: user?.location || '',
     emergencyLevel: 'normal',
     contactNumber: user?.phone || '',
-    requiredDate: new Date().toISOString().split('T')[0],
     reason: '',
   });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!formData.patientName || !formData.bloodGroup || !formData.units) {
-      Alert.alert('Error', 'Please fill in patient name, blood group and units.');
+    if (!formData.bloodGroup || !formData.units) {
+      Alert.alert('Error', 'Please fill in blood group and units.');
       return;
     }
 
     setLoading(true);
     try {
+      const emergencyLevelMap = {
+        normal: 'Normal',
+        urgent: 'High',
+        critical: 'Critical',
+      };
       const payload = {
-        ...formData,
-        hospitalId: user.id,
-        hospitalName: user.name,
-        status: 'open',
+        requesterType: 'hospital',
+        requesterId: user?._id || user?.id,
+        requesterTypeModel: 'User',
+        targetType: 'person',
+        bloodGroup: formData.bloodGroup,
+        unitsNeeded: Number(formData.units),
+        emergencyLevel: emergencyLevelMap[formData.emergencyLevel] || 'Normal',
+        patientCondition: '',
+        hospitalId: null,
+        location: formData.location,
+        contactInfo: formData.contactNumber,
+        reason: formData.reason,
       };
       await api.post('/api/requests', payload);
       Alert.alert('Success', 'Blood request created and broadcasted to nearby donors.');
@@ -60,14 +71,6 @@ const CreateRequestScreen = ({ navigation }) => {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <GlassCard style={styles.card}>
-          <Text style={styles.label}>Patient Name *</Text>
-          <TextInput 
-            style={styles.input}
-            placeholder="Enter patient name"
-            value={formData.patientName}
-            onChangeText={(val) => setFormData({...formData, patientName: val})}
-          />
-
           <Text style={styles.label}>Blood Group Required *</Text>
           <View style={styles.groupContainer}>
             {bloodGroups.map(group => (
@@ -92,15 +95,6 @@ const CreateRequestScreen = ({ navigation }) => {
                 keyboardType="number-pad"
                 value={formData.units}
                 onChangeText={(val) => setFormData({...formData, units: val})}
-              />
-            </View>
-            <View style={{flex: 1, marginLeft: 8}}>
-              <Text style={styles.label}>Required Date</Text>
-              <TextInput 
-                style={styles.input}
-                placeholder="YYYY-MM-DD"
-                value={formData.requiredDate}
-                onChangeText={(val) => setFormData({...formData, requiredDate: val})}
               />
             </View>
           </View>

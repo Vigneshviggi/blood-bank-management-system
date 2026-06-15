@@ -7,14 +7,17 @@ import EmergencyBadge from './EmergencyBadge';
 
 const RequestCard = ({ request, onPress, onRespond }) => {
   const isUrgent = request.emergencyLevel === 'urgent' || request.emergencyLevel === 'critical';
+  const units = request.unitsNeeded ?? request.quantity ?? request.units ?? 0;
+  const bloodGroup = request.bloodGroup || request.bloodType || 'Blood Needed';
+  const requiredDate = request.requiredDate || request.dateRequired || request.createdAt;
 
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
       <GlassCard style={[styles.card, isUrgent && styles.urgentCard]}>
         <View style={styles.header}>
           <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{request.patientName || 'Blood Needed'}</Text>
-            <Text style={styles.hospitalName}>{request.hospitalName || 'Emergency Request'}</Text>
+            <Text style={styles.patientName}>{request.patientName || request.hospitalName || 'Blood Request'}</Text>
+            <Text style={styles.hospitalName}>{request.reason || request.location || 'Emergency Request'}</Text>
           </View>
           <EmergencyBadge level={request.emergencyLevel} />
         </View>
@@ -22,7 +25,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
             <View style={[styles.bloodCircle, isUrgent && styles.urgentBlood]}>
-              <Text style={styles.bloodText}>{request.bloodGroup}</Text>
+              <Text style={styles.bloodText}>{bloodGroup}</Text>
             </View>
             <Text style={styles.detailLabel}>Group</Text>
           </View>
@@ -30,7 +33,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
           <View style={styles.divider} />
 
           <View style={styles.detailItem}>
-            <Text style={styles.detailValue}>{request.units}</Text>
+            <Text style={styles.detailValue}>{units}</Text>
             <Text style={styles.detailLabel}>Units</Text>
           </View>
 
@@ -48,7 +51,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
         <View style={styles.footer}>
           <View style={styles.timeRow}>
             <Clock size={14} color={Colors.textSecondary} />
-            <Text style={styles.timeText}>Needed by {new Date(request.requiredDate).toLocaleDateString()}</Text>
+            <Text style={styles.timeText}>Needed by {new Date(requiredDate).toLocaleDateString()}</Text>
           </View>
           {onRespond ? (
             <TouchableOpacity style={styles.respondBtn} onPress={onRespond}>

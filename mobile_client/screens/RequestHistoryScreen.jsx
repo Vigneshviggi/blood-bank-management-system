@@ -17,8 +17,8 @@ const RequestHistoryScreen = ({ navigation }) => {
       try {
         const res = await api.get('/api/requests');
         const history = res.data.filter(req => 
-          req.requesterId === user._id || 
-          (req.responses && req.responses.some(resp => resp.responderId === user._id))
+          String(req.requesterId) === String(user._id || user.id) || 
+          (req.responses && req.responses.some(resp => String(resp.responderId) === String(user._id || user.id)))
         );
         setRequests(history);
       } catch (err) {

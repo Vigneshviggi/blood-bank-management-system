@@ -42,7 +42,7 @@ const NotificationScreen = () => {
         renderItem={({ item }) => (
           <NotificationCard
             notification={item}
-            onPress={() => !item.read && markAsRead(item._id)}
+            onPress={() => !(item.read || item.isRead) && markAsRead(item._id)}
           />
         )}
         ListEmptyComponent={

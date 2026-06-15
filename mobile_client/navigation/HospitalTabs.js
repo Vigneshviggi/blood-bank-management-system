@@ -4,7 +4,7 @@ import CustomTabBar from '../components/CustomTabBar';
 import HospitalStack from './HospitalStack';
 import ManageCamps from '../screens/ManageCamps';
 import InventoryScreen from '../screens/InventoryScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import { Colors } from '../constants/Theme';
 
@@ -21,7 +21,7 @@ const HospitalTabs = () => {
       <Tab.Screen name="Home" component={HospitalStack} options={{ title: 'Home' }} />
       <Tab.Screen name="Camps" component={ManageCamps} options={{ title: 'Camps' }} />
       <Tab.Screen name="Inventory" component={InventoryScreen} options={{ title: 'Stock' }} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Alerts' }} />
+      <Tab.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

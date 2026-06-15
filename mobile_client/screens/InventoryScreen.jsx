@@ -22,7 +22,7 @@ const InventoryScreen = () => {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/hospitals/${user.id}`);
+      const res = await api.get(`/api/hospitals/${user._id || user.id}`);
       setStock(res.data.stock || {});
     } catch (err) {
       console.error('Error fetching inventory', err);
@@ -50,7 +50,7 @@ const InventoryScreen = () => {
   const saveInventory = async () => {
     setUpdating(true);
     try {
-      await api.put(`/api/hospitals/${user.id}`, { stock });
+      await api.put(`/api/hospitals/${user._id || user.id}`, { stock });
       Alert.alert('Success', 'Inventory updated successfully');
     } catch (err) {
       console.error('Error saving inventory', err);

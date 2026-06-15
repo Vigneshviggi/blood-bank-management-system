@@ -2,6 +2,8 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Camp = require('../models/Camp');
+const Request = require('../models/Request');
 const OTP = require('../models/OTP');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -84,6 +86,27 @@ router.put('/:id', async (req, res) => {
     const { name, bloodGroup, location, imageUrl, bio } = req.body;
     const user = await User.findByIdAndUpdate(req.params.id, { name, bloodGroup, location, imageUrl, bio }, { new: true }).select('-password');
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lightweight dashboard stats for the mobile home screen
+router.get('/stats', async (req, res) => {
+  try {
+    const [totalDonors, totalRequests, upcomingCamps, completedRequests] = await Promise.all([
+      User.countDocuments({ role: 'donor' }),
+      Request.countDocuments(),
+      Camp.countDocuments({ date: { $gte: new Date() } }),
+      Request.countDocuments({ status: 'Completed' })
+    ]);
+
+    res.json({
+      donations: totalRequests,
+      livesSaved: completedRequests,
+      upcomingCamps,
+      totalDonors
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

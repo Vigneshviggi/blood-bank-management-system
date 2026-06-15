@@ -31,7 +31,7 @@ const ManageCamps = () => {
   const fetchMyCamps = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/camps/organized-by/${user.id}`);
+      const res = await api.get(`/api/camps/organized-by/${user._id || user.id}`);
       setCamps(res.data);
     } catch (err) {
       console.error('Error fetching camps', err);
@@ -50,7 +50,7 @@ const ManageCamps = () => {
     try {
       const payload = {
         ...formData,
-        organizerId: user.id,
+        organizerId: user._id || user.id,
         organizerName: user.name,
       };
       await api.post('/api/camps', payload);

@@ -16,7 +16,7 @@ const NotificationCard = ({ notification, onPress }) => {
 
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
-      <GlassCard style={[styles.card, !notification.read && styles.unread]}>
+      <GlassCard style={[styles.card, !(notification.read || notification.isRead) && styles.unread]}>
         <View style={styles.iconContainer}>
           {getIcon()}
         </View>
@@ -28,7 +28,7 @@ const NotificationCard = ({ notification, onPress }) => {
             <Text style={styles.time}>{new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
           </View>
         </View>
-        {!notification.read && <View style={styles.unreadDot} />}
+        {!(notification.read || notification.isRead) && <View style={styles.unreadDot} />}
       </GlassCard>
     </TouchableOpacity>
   );

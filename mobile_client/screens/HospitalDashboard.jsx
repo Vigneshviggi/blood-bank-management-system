@@ -25,14 +25,14 @@ const HospitalDashboard = ({ navigation }) => {
   const fetchDashboardData = async () => {
     try {
       const [hospRes, requestsRes, campsRes] = await Promise.all([
-        api.get(`/api/hospitals/${user.id}`),
-        api.get(`/api/requests?hospitalId=${user.id}`),
-        api.get(`/api/camps/organized-by/${user.id}`)
+        api.get(`/api/hospitals/${user._id || user.id}`),
+        api.get(`/api/requests?requesterId=${user._id || user.id}`),
+        api.get(`/api/camps/organized-by/${user._id || user.id}`)
       ]);
 
       setData({
         inventory: hospRes.data.stock || {},
-        activeRequests: requestsRes.data.filter(r => r.status === 'open').length,
+        activeRequests: requestsRes.data.filter(r => r.status === 'Pending').length,
         upcomingCamps: campsRes.data.length,
         totalDonations: 0 // Assume this is calculated elsewhere
       });
