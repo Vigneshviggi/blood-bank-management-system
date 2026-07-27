@@ -13,12 +13,24 @@ export default function CreateCamp() {
     title: '',
     description: '',
     location: '',
+    venueName: '',
+    fullAddress: '',
     date: '',
     startTime: '',
     endTime: '',
     capacity: 50,
+    maxParticipants: 50,
     bannerImage: '',
     organizerId: user?._id,
+    organizerType: user?.role === 'hospital' ? 'Hospital' : 'User',
+    organizerName: user?.name || '',
+    organizerContact: user?.phone || '',
+    email: user?.email || '',
+    bloodGroupsRequired: 'O+, O-, A+, A-',
+    campInstructions: '',
+    latitude: '',
+    longitude: '',
+    googlePlaceId: '',
     healthCheckup: false
   })
 
@@ -30,11 +42,44 @@ export default function CreateCamp() {
     }))
   }
 
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported in this browser.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords
+      setFormData(prev => ({
+        ...prev,
+        latitude,
+        longitude,
+        location: prev.location || 'Current Device Location'
+      }))
+      toast.success('Current location captured successfully.')
+    }, () => {
+      toast.error('Unable to fetch your current location.')
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await createCamp(formData)
+      const payload = {
+        ...formData,
+        orgaizerId: user?._id,
+        organizerId: user?._id,
+        latitude: Number(formData.latitude || 0),
+        longitude: Number(formData.longitude || 0),
+        maxParticipants: Number(formData.maxParticipants || formData.capacity || 0),
+        currentRegistrations: 0,
+        bloodGroupsRequired: formData.bloodGroupsRequired.split(',').map(item => item.trim()).filter(Boolean),
+        registeredCount: 0,
+        time: `${formData.startTime || ''} - ${formData.endTime || ''}`.trim()
+      }
+
+      await createCamp(payload)
       toast.success('Donation Camp hosted successfully!')
       navigate('/camps')
     } catch (error) {
@@ -92,15 +137,24 @@ export default function CreateCamp() {
             {/* Location */}
             <div className="space-y-3">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Location</label>
-              <input
-                type="text"
-                name="location"
-                required
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Full address or venue name"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
-              />
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  name="location"
+                  required
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="Full address or venue name"
+                  className="w-full px-6 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-bold text-slate-700 dark:text-white outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={captureLocation}
+                  className="px-4 py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white text-xs font-black uppercase tracking-widest"
+                >
+                  Use Location
+                </button>
+              </div>
             </div>
 
             {/* Capacity */}

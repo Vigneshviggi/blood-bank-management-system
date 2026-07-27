@@ -3,7 +3,11 @@ const router = express.Router();
 const User = require('../models/User');
 const OTP = require('../models/OTP');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { sendOTPEmail } = require('../utils/emailService');
+const { OAuth2Client } = require('google-auth-library');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Helper to generate 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -92,6 +96,71 @@ router.post('/reset-password', async (req, res) => {
   } catch (err) {
     console.error("RESET PASSWORD ERROR:", err);
     res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 4. Google Sign-In
+router.post('/google', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    
+    // Verify Google Token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { sub, email, name, picture } = payload;
+    
+    // Check if user exists
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      // User exists - update last login and profile picture
+      user.lastLogin = new Date();
+      if (!user.authProvider || user.authProvider === 'local') {
+        user.authProvider = 'local'; // Keep it local if they started as local
+      }
+      if (picture && !user.imageUrl) {
+        user.imageUrl = picture;
+      }
+      if (!user.googleId) {
+         user.googleId = sub;
+      }
+      await user.save();
+    } else {
+      // New user - create with Google Provider
+      user = new User({
+        name,
+        email,
+        authProvider: 'google',
+        googleId: sub,
+        imageUrl: picture || '',
+        lastLogin: new Date(),
+        role: 'donor',
+        status: 'active',
+        // Provide dummy bloodGroup and location since they are required by the schema initially
+        bloodGroup: 'Unknown',
+        location: 'Unknown'
+      });
+      await user.save();
+    }
+
+    // Generate JWT (matching the logic in userRoutes.js login)
+    const token = jwt.sign(
+      { id: user._id, userId: user._id, role: user.role },
+      process.env.JWT_SECRET || 'supersecretlifelink',
+      { expiresIn: '7d' }
+    );
+    
+    const userObj = user.toObject();
+    delete userObj.password;
+    
+    res.json({ token, user: userObj, isNewUser: user.bloodGroup === 'Unknown' });
+  } catch (err) {
+    console.error("GOOGLE AUTH ERROR:", err);
+    res.status(401).json({ success: false, message: "Invalid Google Token or server error" });
   }
 });
 

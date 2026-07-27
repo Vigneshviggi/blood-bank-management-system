@@ -1,0 +1,15 @@
+{
+  "home": {
+    "title": "Welcome Back",
+    "recent_requests": "Recent Requests",
+    "see_all": "See All"
+  },
+  "profile": {
+    "my_profile": "My Profile",
+    "donations": "Donations",
+    "responses": "Responses"
+  },
+  "map": {
+    "title": "Nearby Hospitals"
+  }
+}

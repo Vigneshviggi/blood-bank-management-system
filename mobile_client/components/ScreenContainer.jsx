@@ -1,12 +1,13 @@
 import React from 'react';
-import { ScrollView, StyleSheet, SafeAreaView, View, Platform, StatusBar } from 'react-native';
-import { Colors, Spacing, Radius } from '../constants/Theme';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors, Spacing } from '../constants/Theme';
 
 const ScreenContainer = ({ children, scrollable = true, style }) => {
   const Container = scrollable ? ScrollView : View;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.background}>
         <View style={styles.glowTop} />
         <View style={styles.glowBottom} />
@@ -26,7 +27,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   background: {
     flex: 1,

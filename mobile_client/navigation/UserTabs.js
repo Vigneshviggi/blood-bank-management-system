@@ -10,6 +10,7 @@ import NotificationScreen from '../screens/NotificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import RequestDetailsScreen from '../screens/RequestDetailsScreen';
 import CampDetailsScreen from '../screens/CampDetailsScreen';
+import BloodRequestScreen from '../screens/BloodRequestScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -30,6 +31,7 @@ const RequestsStack = () => (
     <Stack.Screen name="MyResponses" component={MyResponsesScreen} />
     <Stack.Screen name="CompletedRequests" component={CompletedRequestsScreen} />
     <Stack.Screen name="RequestDetails" component={RequestDetailsScreen} />
+    <Stack.Screen name="BloodRequest" component={BloodRequestScreen} />
   </Stack.Navigator>
 );
 
@@ -62,8 +64,8 @@ const UserTabs = () => {
     >
       <Tab.Screen name="Home" component={HomeStack} options={{ title: 'Home' }} />
       <Tab.Screen name="Requests" component={RequestsStack} options={{ title: 'Requests' }} />
-      <Tab.Screen name="Camps" component={CampsStack} options={{ title: 'Camps' }} />
       <Tab.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Alerts' }} />
+      <Tab.Screen name="Camps" component={CampsStack} options={{ title: 'Camps' }} />
       <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

@@ -21,8 +21,8 @@ const HomeScreen = ({ navigation }) => {
   const fetchData = async () => {
     try {
       const [requestsRes, statsRes] = await Promise.all([
-        api.get('/api/requests?limit=3'),
-        api.get('/api/users/stats') // Assume this exists or mock it
+        api.get('/requests?limit=3'),
+        api.get('/users/stats') // Assume this exists or mock it
       ]);
       setRecentRequests(requestsRes.data);
       if (statsRes.data) setStats(statsRes.data);

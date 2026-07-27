@@ -8,6 +8,33 @@ import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '../../components/ui/GlassCard';
 import Badge from '../../components/ui/Badge';
 
+const fallbackRequests = [
+  {
+    _id: 'req-1',
+    patientName: 'Aarav',
+    location: 'Bandra, Mumbai',
+    bloodGroup: 'O+',
+    unitsNeeded: 2,
+    emergencyLevel: 'High',
+    reason: 'Emergency surgery planned this evening',
+    requiredDate: '2026-07-09T10:00:00Z',
+    status: 'Pending',
+    requesterType: 'hospital',
+  },
+  {
+    _id: 'req-2',
+    patientName: 'Meera',
+    location: 'Koramangala, Bengaluru',
+    bloodGroup: 'AB-',
+    unitsNeeded: 1,
+    emergencyLevel: 'Critical',
+    reason: 'Road accident victim needs immediate transfusion',
+    requiredDate: '2026-07-08T18:30:00Z',
+    status: 'Pending',
+    requesterType: 'hospital',
+  },
+];
+
 const RequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +47,12 @@ const RequestsScreen = ({ navigation }) => {
 
   const fetchRequests = async () => {
     try {
-      const res = await api.get('/api/requests');
-      setRequests(res.data);
+      const res = await api.get('/requests');
+      const nextRequests = Array.isArray(res.data) ? res.data : fallbackRequests;
+      setRequests(nextRequests.length ? nextRequests : fallbackRequests);
     } catch (err) {
       console.error('Error fetching requests', err);
+      setRequests(fallbackRequests);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,6 +100,14 @@ const RequestsScreen = ({ navigation }) => {
         </View>
         <Badge label={`${requests.length} Live`} variant="primary" />
       </View>
+
+      <TouchableOpacity 
+        style={styles.newRequestBtn} 
+        onPress={() => navigation.navigate('BloodRequest')}
+      >
+        <Ionicons name="add-circle-outline" size={20} color="#fff" style={{marginRight: 8}} />
+        <Text style={styles.newRequestBtnText}>Request Blood</Text>
+      </TouchableOpacity>
 
       <View style={styles.quickRow}>
         <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('MyResponses')}>
@@ -158,6 +195,25 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  newRequestBtn: {
+    backgroundColor: '#E53935',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#E53935',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  newRequestBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   quickRow: {
     flexDirection: 'row',

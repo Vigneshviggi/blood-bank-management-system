@@ -8,6 +8,7 @@ import Animated, {
   FadeIn 
 } from 'react-native-reanimated';
 import { Colors } from '../constants/Theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -19,8 +20,21 @@ const SplashScreen = ({ navigation }) => {
     scale.value = withSpring(1);
     opacity.value = withDelay(500, withSpring(1));
 
+    const checkOnboarding = async () => {
+      try {
+        const hasOnboarded = await AsyncStorage.getItem('hasOnboarded');
+        if (hasOnboarded === 'true') {
+          navigation.replace('Login');
+        } else {
+          navigation.replace('Onboarding');
+        }
+      } catch (err) {
+        navigation.replace('Onboarding');
+      }
+    };
+
     const timer = setTimeout(() => {
-      navigation.replace('Onboarding');
+      checkOnboarding();
     }, 2500);
 
     return () => clearTimeout(timer);

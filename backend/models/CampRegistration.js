@@ -5,7 +5,7 @@ const campRegistrationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   bloodGroup: { type: String, required: true },
   contactInfo: { type: String, required: true },
-  status: { type: String, enum: ['Registered', 'Attended', 'Cancelled'], default: 'Registered' },
+  status: { type: String, enum: ['Registered', 'Approved', 'Rejected', 'Attended', 'Cancelled'], default: 'Registered' },
   registrationDate: { type: Date, default: Date.now }
 }, { timestamps: true });
 

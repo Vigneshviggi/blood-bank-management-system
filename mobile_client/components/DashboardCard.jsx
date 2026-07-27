@@ -1,31 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-const DashboardCard = ({ type }) => {
+const DashboardCard = ({ type, navigation, onPress }) => {
   // Render different cards based on type (emergency, hospitals, donationHistory, camps, inventory, analytics, etc.)
   let title = '';
   let description = '';
   let cta = '';
+  let target = null;
   switch (type) {
     case 'emergency':
       title = 'Nearby Emergency Requests';
       description = 'View and respond to urgent blood requests in your area.';
       cta = 'Donate Now';
+      target = 'Requests';
       break;
     case 'hospitals':
       title = 'Nearby Hospitals';
       description = 'Find hospitals and their blood inventory.';
       cta = 'Find Hospitals';
+      target = 'Home';
       break;
     case 'donationHistory':
       title = 'Donation History';
       description = 'Track your past blood donations and impact.';
       cta = 'View History';
+      target = 'RequestHistory';
       break;
     case 'camps':
       title = 'Upcoming Camps';
       description = 'Register for upcoming blood donation camps.';
       cta = 'Register';
+      target = 'Camps';
       break;
     case 'inventory':
       title = 'Blood Inventory';
@@ -62,12 +67,23 @@ const DashboardCard = ({ type }) => {
       description = '';
       cta = '';
   }
+  const handlePress = () => {
+    if (onPress) {
+      onPress(target || type);
+      return;
+    }
+
+    if (target && navigation) {
+      navigation.getParent?.()?.navigate?.(target) || navigation.navigate?.(target);
+    }
+  };
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {cta ? (
-        <TouchableOpacity style={styles.ctaBtn}>
+        <TouchableOpacity style={styles.ctaBtn} onPress={handlePress}>
           <Text style={styles.ctaText}>{cta}</Text>
         </TouchableOpacity>
       ) : null}

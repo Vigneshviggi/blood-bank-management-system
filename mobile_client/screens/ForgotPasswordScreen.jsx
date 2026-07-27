@@ -19,7 +19,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      await api.post('/api/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
       Alert.alert(
         'OTP Sent',
         'If an account exists with this email, you will receive an OTP.',

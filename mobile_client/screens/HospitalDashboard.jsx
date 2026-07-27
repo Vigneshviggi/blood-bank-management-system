@@ -26,9 +26,9 @@ const HospitalDashboard = ({ navigation }) => {
   const fetchDashboardData = async () => {
     try {
       const [hospRes, requestsRes, campsRes] = await Promise.all([
-        api.get(`/api/hospitals/${user._id || user.id}`),
-        api.get(`/api/requests?requesterId=${user._id || user.id}`),
-        api.get(`/api/camps/organized-by/${user._id || user.id}`)
+        api.get('/hospitals/profile/me'),
+        api.get(`/requests?requesterId=${user._id || user.id}`),
+        api.get(`/camps/organized-by/${user._id || user.id}`)
       ]);
 
       setData({
@@ -84,39 +84,47 @@ const HospitalDashboard = ({ navigation }) => {
 
   return (
     <ScreenContainer scrollable={false}>
+      <View style={styles.topNav}>
+        <View style={styles.logoRow}>
+          <Text style={styles.logoText}>{user?.name?.toLowerCase() || 'saveetha'} <View style={styles.verifiedDot} /></Text>
+        </View>
+        <View style={styles.rightNav}>
+          <View style={styles.rolePill}><Text style={styles.roleText}>Hospital</Text></View>
+          <TouchableOpacity style={styles.bellBtn}>
+            <Activity size={20} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.welcomeText}>Hospital Portal</Text>
-            <Text style={styles.nameText}>{user?.name}</Text>
-            <Text style={styles.subtitle}>Manage inventory, blood demand and camp coordination from one command center.</Text>
-          </View>
-          <Badge label={user?.verified ? 'Verified' : 'Pending'} variant={user?.verified ? 'success' : 'warning'} />
+          <Text style={styles.subtitle}>Manage inventory, blood demand and camp coordination from one command center.</Text>
         </View>
 
         <View style={styles.statsRow}>
-          <GlassCard style={styles.statBox}>
-            <Activity size={24} color={Colors.primary} />
+          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('BloodRequests')}>
+            <Activity size={28} color={Colors.primary} style={{marginBottom: 8}} />
             <Text style={styles.statValue}>{data.activeRequests}</Text>
             <Text style={styles.statLabel}>Active Requests</Text>
-          </GlassCard>
-          <GlassCard style={styles.statBox}>
-            <Megaphone size={24} color={Colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Camps')}>
+            <Megaphone size={28} color={Colors.accent} style={{marginBottom: 8}} />
             <Text style={styles.statValue}>{data.upcomingCamps}</Text>
             <Text style={styles.statLabel}>My Camps</Text>
-          </GlassCard>
+          </TouchableOpacity>
         </View>
 
-        <GlassCard style={styles.alertCard}>
+        <View style={styles.alertCard}>
           <View style={styles.alertHeader}>
-            <AlertTriangle size={18} color={Colors.warning} />
+            <AlertTriangle size={18} color={Colors.primary} />
             <Text style={styles.alertTitle}>Emergency Readiness</Text>
           </View>
           <Text style={styles.alertText}>Keep your stock levels current to reduce response time for high-priority requests.</Text>
-        </GlassCard>
+        </View>
 
         {renderInventorySummary()}
 
@@ -126,79 +134,128 @@ const HospitalDashboard = ({ navigation }) => {
 
         <View style={styles.actionGrid}>
           <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('CreateRequest')}>
-            <PlusCircle size={32} color={Colors.primary} />
+            <PlusCircle size={24} color={Colors.primary} />
             <Text style={styles.actionText}>New Request</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Inventory')}>
-            <Beaker size={32} color={Colors.primary} />
-            <Text style={styles.actionText}>Stock Update</Text>
+            <Beaker size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>Update Stock</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Camps')}>
-            <Megaphone size={32} color={Colors.primary} />
+            <Megaphone size={24} color={Colors.primary} />
             <Text style={styles.actionText}>Organize Camp</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('BloodRequests')}>
+            <Activity size={24} color={Colors.textSecondary} />
+            <Text style={styles.actionText}>View Requests</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Analytics')}>
+            <Activity size={24} color={Colors.textSecondary} />
+            <Text style={styles.actionText}>Analytics</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: 120 }} />
+        <View style={{ height: 40 }} />
       </ScrollView>
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
+  topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 24,
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
   },
-  headerCopy: {
-    flex: 1,
-    paddingRight: 12,
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  welcomeText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  nameText: {
-    fontSize: 24,
+  logoText: {
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
   },
+  verifiedDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#4CAF50',
+    marginLeft: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  rightNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  rolePill: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  roleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  bellBtn: {
+    padding: 4,
+  },
+  header: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
   subtitle: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 20,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
     marginBottom: 20,
   },
   statBox: {
     flex: 1,
-    marginHorizontal: 6,
+    backgroundColor: '#fff',
+    marginHorizontal: 4,
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '800',
     color: Colors.text,
-    marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
+    fontWeight: '500',
+    marginTop: 4,
   },
   alertCard: {
+    marginHorizontal: 20,
+    backgroundColor: '#FFF5F5',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
   },
   alertHeader: {
     flexDirection: 'row',
@@ -206,17 +263,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alertTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   alertText: {
-    marginTop: 8,
-    color: Colors.textSecondary,
-    lineHeight: 20,
+    marginTop: 6,
+    color: '#666',
+    fontSize: 12,
+    lineHeight: 18,
   },
   inventoryCard: {
+    marginHorizontal: 20,
     marginBottom: 24,
+    padding: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    elevation: 0,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -225,12 +288,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '700',
     color: Colors.text,
   },
   viewMore: {
     color: Colors.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
   inventoryGrid: {
@@ -241,48 +305,46 @@ const styles = StyleSheet.create({
   inventoryItem: {
     width: '23%',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   groupLabel: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.textSecondary,
     marginBottom: 4,
   },
   groupValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  lowStock: {
+    fontSize: 20,
+    fontWeight: '800',
     color: Colors.primary,
   },
+  lowStock: {
+    color: Colors.warning,
+  },
   sectionHeader: {
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.text,
   },
   actionGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
   },
   actionTile: {
-    width: '31%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
+    width: '18%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    marginHorizontal: '1%',
+    marginBottom: 16,
   },
   actionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.text,
+    fontSize: 10,
+    fontWeight: '500',
+    color: Colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },

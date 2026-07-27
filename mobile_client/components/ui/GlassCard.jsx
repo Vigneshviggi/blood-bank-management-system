@@ -1,21 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Colors, Radius, Shadows } from '../../constants/Theme';
 
-const GlassCard = ({ children, style, intensity = 80, tint = 'light' }) => {
-  if (Platform.OS === 'web') {
-    return (
-      <View style={[styles.card, styles.webCard, style]}>
-        {children}
-      </View>
-    );
-  }
-
+const GlassCard = ({ children, style }) => {
   return (
-    <BlurView intensity={intensity} tint={tint} style={[styles.card, style]}>
+    <View style={[styles.card, Platform.OS === 'web' ? styles.webCard : styles.nativeCard, style]}>
       {children}
-    </BlurView>
+    </View>
   );
 };
 
@@ -28,6 +19,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.7)',
     backgroundColor: Colors.surface,
     ...Shadows.soft,
+  },
+  nativeCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
   },
   webCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.88)',

@@ -6,6 +6,7 @@ import GlassCard from '../components/ui/GlassCard';
 import Badge from '../components/ui/Badge';
 import { Colors } from '../constants/Theme';
 import { User, Mail, Phone, MapPin, Droplets, LogOut, Settings, ChevronRight, History, Calendar, Award, ShieldCheck, HeartPulse } from 'lucide-react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useContext(AuthContext);
@@ -62,6 +63,19 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         )}
       </View>
+
+      <GlassCard style={styles.qrCard}>
+        <Text style={styles.qrTitle}>My Donor ID</Text>
+        <View style={styles.qrContainer}>
+          <QRCode
+            value={JSON.stringify({ userId: user?._id || user?.id, bloodGroup: user?.bloodGroup })}
+            size={150}
+            color={Colors.primary}
+            backgroundColor="transparent"
+          />
+        </View>
+        <Text style={styles.qrSubtitle}>Scan at hospitals or camps</Text>
+      </GlassCard>
 
       <GlassCard style={styles.detailsCard}>
         <View style={styles.detailRow}>
@@ -278,6 +292,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.error,
     marginLeft: 12,
+  },
+  qrCard: {
+    marginBottom: 32,
+    alignItems: 'center',
+    padding: 24,
+  },
+  qrTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 16,
+  },
+  qrContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  qrSubtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontWeight: '600',
   },
 });
 

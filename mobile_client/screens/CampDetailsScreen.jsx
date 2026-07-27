@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ScrollView, Linking } from 'react-native';
 import api from '../services/api';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { AuthContext } from '../context/AuthContext';
-import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
 import Badge from '../components/ui/Badge';
 import { Colors } from '../constants/Theme';
+import MapView, { Marker } from '../components/MapWrapper';
+import QRCode from 'react-native-qrcode-svg';
+import { MapPin, Navigation } from 'lucide-react-native';
 
 const CampDetailsScreen = ({ route, navigation }) => {
   const { camp: initialCamp } = route.params;
@@ -18,11 +20,11 @@ const CampDetailsScreen = ({ route, navigation }) => {
   const fetchCamp = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/camps/${camp._id}`);
+      const res = await api.get(`/camps/${camp._id}`);
       setCamp(res.data);
       
       if (user) {
-        const regRes = await api.get(`/api/camps/${camp._id}/registration-status?userId=${user._id}`);
+        const regRes = await api.get(`/camps/${camp._id}/registration-status?userId=${user._id}`);
         if (regRes.data) {
           setRegistered(true);
         }
@@ -35,7 +37,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
     if (!user) return;
     setLoading(true);
     try {
-      await api.post(`/api/camps/${camp._id}/register`, {
+      await api.post(`/camps/${camp._id}/register`, {
         userId: user._id,
         bloodGroup: user.bloodGroup || 'A+',
         contactInfo: user.phone || ''
@@ -53,7 +55,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
     if (!user) return;
     setLoading(true);
     try {
-      await api.post(`/api/camps/${camp._id}/cancel-registration`, {
+      await api.post(`/camps/${camp._id}/cancel-registration`, {
         userId: user._id
       });
       setRegistered(false);
@@ -69,11 +71,18 @@ const CampDetailsScreen = ({ route, navigation }) => {
     fetchCamp();
   }, []);
 
+  const openDirections = () => {
+    if (camp.latitude && camp.longitude) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${camp.latitude},${camp.longitude}`;
+      Linking.openURL(url);
+    }
+  };
+
   if (loading) return <LoadingSkeleton height={60} />;
 
   const capacity = Number(camp.capacity || 0);
-  const registered = Number(camp.registeredCount || 0);
-  const occupancy = capacity > 0 ? Math.min(100, Math.round((registered / capacity) * 100)) : 0;
+  const registeredCountValue = Number(camp.registeredCount || 0);
+  const occupancy = capacity > 0 ? Math.min(100, Math.round((registeredCountValue / capacity) * 100)) : 0;
 
   return (
     <ScreenContainer scrollable={false}>
@@ -102,7 +111,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Registered</Text>
-              <Text style={styles.summaryValue}>{registered}</Text>
+              <Text style={styles.summaryValue}>{registeredCountValue}</Text>
             </View>
           </View>
           <View style={styles.progressTrack}>
@@ -119,6 +128,44 @@ const CampDetailsScreen = ({ route, navigation }) => {
             <Badge label={camp.organizer || 'Organizer'} variant="info" />
           </View>
         </GlassCard>
+
+        {camp.latitude && camp.longitude ? (
+          <GlassCard style={styles.mapCard}>
+            <Text style={styles.sectionTitle}>Location Map</Text>
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: camp.latitude,
+                  longitude: camp.longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+              >
+                <Marker coordinate={{ latitude: camp.latitude, longitude: camp.longitude }} />
+              </MapView>
+            </View>
+            <TouchableOpacity style={styles.navigateBtn} onPress={openDirections}>
+              <Navigation size={18} color="#fff" />
+              <Text style={styles.navigateText}>Get Directions</Text>
+            </TouchableOpacity>
+          </GlassCard>
+        ) : null}
+
+        {registered && (
+          <GlassCard style={styles.qrCard}>
+            <Text style={styles.sectionTitle}>Your Entry Pass</Text>
+            <View style={styles.qrContainer}>
+              <QRCode
+                value={JSON.stringify({ campId: camp._id, userId: user._id })}
+                size={150}
+                color="black"
+                backgroundColor="white"
+              />
+              <Text style={styles.qrText}>Show this QR code at the camp entrance</Text>
+            </View>
+          </GlassCard>
+        )}
 
         {registered ? (
           <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
@@ -242,6 +289,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  mapCard: {
+    marginBottom: 16,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  map: {
+    flex: 1,
+  },
+  navigateBtn: {
+    flexDirection: 'row',
+    backgroundColor: Colors.primary,
+    padding: 12,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  navigateText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  qrCard: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  qrContainer: {
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginTop: 10,
+  },
+  qrText: {
+    marginTop: 14,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
 });
 

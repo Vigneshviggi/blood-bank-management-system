@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import UserTabs from './UserTabs';
 import HospitalTabs from './HospitalTabs';
 import AdminTabs from './AdminTabs';
+import BloodBankTabs from './BloodBankTabs';
 import { View, ActivityIndicator } from 'react-native';
 import { Colors } from '../constants/Theme';
 
@@ -20,10 +21,14 @@ const MainNavigator = () => {
   switch (role) {
     case 'hospital':
       return <HospitalTabs />;
+    case 'blood_bank':
+      return <BloodBankTabs />;
     case 'admin':
+    case 'super_admin':
       return <AdminTabs />;
     case 'user':
     case 'donor':
+    case 'volunteer':
     default:
       return <UserTabs />;
   }

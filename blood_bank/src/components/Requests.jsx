@@ -20,14 +20,19 @@ export default function Requests() {
   const [formData, setFormData] = useState({
     requesterType: user?.role === 'hospital' ? 'hospital' : 'donor',
     requesterId: user?._id,
-    requesterTypeModel: 'User', // Both donors and hospitals are Users in this system
+    requesterTypeModel: 'User',
     targetType: 'person',
+    patientName: user?.name || '',
     bloodGroup: 'O+',
     unitsNeeded: 1,
     emergencyLevel: 'Normal',
     patientCondition: '',
     hospitalId: '',
     location: user?.location || '',
+    latitude: '',
+    longitude: '',
+    requiredBefore: '',
+    contactNumber: user?.phone || '',
     contactInfo: user?.phone || '',
     reason: '',
   })
@@ -65,11 +70,34 @@ export default function Requests() {
     }
   }
 
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported in this browser.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      const { latitude, longitude } = position.coords
+      setFormData(prev => ({ ...prev, latitude, longitude }))
+      toast.success('Current location captured.')
+    }, () => {
+      toast.error('Unable to fetch current location.')
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await createRequest(formData)
+      await createRequest({
+        ...formData,
+        requesterId: user?._id,
+        requesterTypeModel: user?.role === 'hospital' ? 'Hospital' : 'User',
+        contactInfo: formData.contactNumber || formData.contactInfo,
+        latitude: Number(formData.latitude || 0),
+        longitude: Number(formData.longitude || 0),
+        requiredBefore: formData.requiredBefore || undefined
+      })
       toast.success('Request created successfully!')
       navigate('/')
     } catch (error) {
@@ -180,14 +208,56 @@ export default function Requests() {
         </div>
         <div className="space-y-4">
           <label className="block text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Location / Contact</label>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Hospital location or pickup address"
+              className="w-full px-5 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-medium focus:ring-2 focus:ring-red-500 outline-none"
+            />
+            <button
+              type="button"
+              onClick={captureLocation}
+              className="px-4 py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white text-xs font-black uppercase tracking-widest"
+            >
+              GPS
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <label className="block text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Patient Name</label>
           <input
             type="text"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Hospital location or pickup address"
+            value={formData.patientName}
+            onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+            placeholder="Patient full name"
             className="w-full px-5 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-medium focus:ring-2 focus:ring-red-500 outline-none"
           />
         </div>
+        <div className="space-y-4">
+          <label className="block text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Contact Number</label>
+          <input
+            type="tel"
+            value={formData.contactNumber}
+            onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
+            placeholder="Primary emergency contact"
+            className="w-full px-5 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-medium focus:ring-2 focus:ring-red-500 outline-none"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <label className="block text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Required Before</label>
+        <input
+          type="datetime-local"
+          value={formData.requiredBefore}
+          onChange={(e) => setFormData({ ...formData, requiredBefore: e.target.value })}
+          className="w-full px-5 py-4 bg-slate-50 dark:bg-gray-900 border border-slate-100 dark:border-gray-700 rounded-2xl font-medium focus:ring-2 focus:ring-red-500 outline-none"
+        />
       </div>
 
       <div className="space-y-4">

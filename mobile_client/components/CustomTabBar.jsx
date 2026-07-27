@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 
 const icons = {
   Home: 'home',
   Requests: 'medkit',
+  Map: 'map',
   Camps: 'calendar',
   Notifications: 'notifications',
   Profile: 'person',
@@ -15,7 +15,7 @@ const icons = {
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.container}>
-      <BlurView intensity={60} tint="light" style={styles.blur}>
+      <View style={styles.blur}>
         <View style={styles.tabBar}>
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
@@ -59,7 +59,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
             );
           })}
         </View>
-      </BlurView>
+      </View>
     </View>
   );
 };

@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
         if (decoded.exp < currentTime) {
           await logout();
         } else {
-          const profileResponse = await api.get('/api/users/profile');
+          const profileResponse = await api.get('/users/profile');
           const profile = profileResponse.data?.user;
           setUser(profile || decoded);
           setRole(profile?.role || decoded.role);
@@ -48,6 +48,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (idToken) => {
+    try {
+      const response = await api.post('/auth/google', { idToken });
+      const { token, user } = response.data;
+      await login(token, user);
+      return { success: true, user };
+    } catch (error) {
+      console.error('Google Login error', error);
+      return { success: false, error: error.response?.data?.message || 'Google Login failed' };
+    }
+  };
+
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('token');
@@ -63,7 +75,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, login, logout, updateProfile, refreshUser: loadUser }}>
+    <AuthContext.Provider value={{ user, role, loading, login, googleLogin, logout, updateProfile, refreshUser: loadUser }}>
       {children}
     </AuthContext.Provider>
   );

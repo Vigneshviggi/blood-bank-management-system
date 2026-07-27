@@ -15,6 +15,11 @@ const ResponseModal = ({ visible, onClose, onSubmit, request }) => {
     setEta('');
     setNote('');
   };
+  const handleMaybeLater = () => {
+    onSubmit({ status: 'Maybe Later', note });
+    setEta('');
+    setNote('');
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide">
@@ -39,6 +44,9 @@ const ResponseModal = ({ visible, onClose, onSubmit, request }) => {
           <View style={styles.actions}>
             <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept}>
               <Text style={styles.btnText}>Accept</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.maybeBtn} onPress={handleMaybeLater}>
+              <Text style={styles.btnText}>Maybe Later</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.rejectBtn} onPress={handleReject}>
               <Text style={styles.btnText}>Reject</Text>
@@ -90,10 +98,18 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 8,
     marginTop: 10,
+    flexWrap: 'wrap',
   },
   acceptBtn: {
     backgroundColor: '#43a047',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+  },
+  maybeBtn: {
+    backgroundColor: '#f59e0b',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,

@@ -15,6 +15,10 @@ const InventoryScreen = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState('A+');
+  const [quantity, setQuantity] = useState('');
+
   useEffect(() => {
     fetchInventory();
   }, []);
@@ -22,39 +26,32 @@ const InventoryScreen = () => {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/api/hospitals/${user._id || user.id}`);
+      const res = await api.get(`/hospitals/profile/me`);
       setStock(res.data.stock || {});
     } catch (err) {
       console.error('Error fetching inventory', err);
-      Alert.alert('Error', 'Failed to load inventory data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateStock = (group, delta) => {
-    setStock(prev => ({
-      ...prev,
-      [group]: Math.max(0, (Number(prev[group]) || 0) + delta)
-    }));
+  const getStatus = (units) => {
+    if (units >= 20) return { label: 'Available', color: '#4CAF50', bg: '#E8F5E9' };
+    if (units >= 5) return { label: 'Low', color: '#FF9800', bg: '#FFF3E0' };
+    return { label: 'Critical', color: '#F44336', bg: '#FFEBEE' };
   };
 
-  const handleManualInput = (group, value) => {
-    const numValue = parseInt(value) || 0;
-    setStock(prev => ({
-      ...prev,
-      [group]: numValue
-    }));
-  };
-
-  const saveInventory = async () => {
+  const handleUpdateStock = async () => {
+    if (!quantity) return;
     setUpdating(true);
+    const newStock = { ...stock, [selectedGroup]: (stock[selectedGroup] || 0) + parseInt(quantity) };
     try {
-      await api.put(`/api/hospitals/${user._id || user.id}`, { stock });
-      Alert.alert('Success', 'Inventory updated successfully');
+      await api.put(`/hospitals/profile/me`, { stock: newStock });
+      setStock(newStock);
+      setModalVisible(false);
+      setQuantity('');
     } catch (err) {
-      console.error('Error saving inventory', err);
-      Alert.alert('Error', 'Failed to update inventory');
+      console.error('Error updating stock', err);
     } finally {
       setUpdating(false);
     }
@@ -69,87 +66,89 @@ const InventoryScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{flex: 1}}
-    >
-      <ScreenContainer>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Blood Inventory</Text>
-            <Text style={styles.subtitle}>Current stock levels in units</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.refreshBtn} 
-            onPress={fetchInventory} 
-            disabled={updating}
-          >
-            <RefreshCcw size={20} color={Colors.primary} />
+    <ScreenContainer scrollable={false} style={{ paddingHorizontal: 0 }}>
+      <View style={styles.topNav}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
+          <Info size={24} color={Colors.text} style={{transform: [{rotate: '180deg'}]}} />
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>Blood Inventory</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      <View style={styles.listHeader}>
+        <Text style={[styles.headerCol, {flex: 1}]}>Blood Group</Text>
+        <Text style={[styles.headerCol, {flex: 1, textAlign: 'center'}]}>Units Available</Text>
+        <Text style={[styles.headerCol, {flex: 1, textAlign: 'right'}]}>Status</Text>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {bloodGroups.map((group) => {
+          const units = stock[group] || 0;
+          const status = getStatus(units);
+          return (
+            <View key={group} style={styles.listItem}>
+              <View style={[styles.cell, {flex: 1, flexDirection: 'row', alignItems: 'center'}]}>
+                <View style={styles.dropIcon}><Info size={14} color={Colors.primary} /></View>
+                <Text style={styles.groupText}>{group}</Text>
+              </View>
+              <Text style={[styles.cell, styles.unitsText, {flex: 1, textAlign: 'center'}]}>{units}</Text>
+              <View style={[styles.cell, {flex: 1, alignItems: 'flex-end'}]}>
+                <View style={[styles.statusBadge, {backgroundColor: status.bg}]}>
+                  <Text style={[styles.statusText, {color: status.color}]}>{status.label}</Text>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+
+        <View style={styles.buttonGrid}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setModalVisible(true)}>
+            <Plus size={18} color="#fff" />
+            <Text style={styles.primaryBtnText}>Add Stock</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.outlineBtn}>
+            <Text style={styles.outlineBtnText}>Edit Stock</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.outlineBtn}>
+            <Text style={styles.outlineBtnText}>Remove Stock</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.outlineBtn}>
+            <Text style={styles.outlineBtnText}>View History</Text>
           </TouchableOpacity>
         </View>
+        <View style={{ height: 40 }} />
+      </ScrollView>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.grid}>
-            {bloodGroups.map((group) => {
-              const isLow = (stock[group] || 0) < 5;
-              return (
-                <GlassCard key={group} style={styles.stockCard}>
-                  <View style={styles.cardTop}>
-                    <Text style={styles.groupLabel}>{group}</Text>
-                    {isLow && (
-                      <View style={styles.lowBadge}>
-                        <Info size={10} color={Colors.error} />
-                        <Text style={styles.lowText}>LOW</Text>
-                      </View>
-                    )}
-                  </View>
-                  
-                  <View style={styles.controlRow}>
-                    <TouchableOpacity 
-                      style={styles.iconBtn} 
-                      onPress={() => handleUpdateStock(group, -1)}
-                    >
-                      <Minus size={18} color={Colors.textSecondary} />
-                    </TouchableOpacity>
-                    
-                    <TextInput
-                      style={styles.stockInput}
-                      value={String(stock[group] || 0)}
-                      onChangeText={(val) => handleManualInput(group, val)}
-                      keyboardType="number-pad"
-                    />
+      {/* Basic Stock Update Modal to match Reference 3 */}
+      {modalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Stock Update</Text>
+            
+            <Text style={styles.label}>Blood Group</Text>
+            <View style={styles.inputBox}>
+              <Text style={styles.inputText}>{selectedGroup}</Text>
+            </View>
 
-                    <TouchableOpacity 
-                      style={styles.iconBtn} 
-                      onPress={() => handleUpdateStock(group, 1)}
-                    >
-                      <Plus size={18} color={Colors.primary} />
-                    </TouchableOpacity>
-                  </View>
-                </GlassCard>
-              );
-            })}
+            <Text style={styles.label}>Quantity (Units)</Text>
+            <TextInput
+              style={styles.inputBox}
+              value={quantity}
+              onChangeText={setQuantity}
+              keyboardType="number-pad"
+              placeholder="e.g. 10"
+            />
+
+            <TouchableOpacity style={styles.updateBtn} onPress={handleUpdateStock}>
+              {updating ? <ActivityIndicator color="#fff" /> : <Text style={styles.updateBtnText}>Update Stock</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity 
-            style={[styles.saveBtn, updating && styles.disabledBtn]} 
-            onPress={saveInventory}
-            disabled={updating}
-          >
-            {updating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Save size={20} color="#fff" />
-                <Text style={styles.saveBtnText}>Update Inventory</Text>
-              </>
-            )}
-          </TouchableOpacity>
-          
-          <View style={{ height: 120 }} />
-        </ScrollView>
-      </ScreenContainer>
-    </KeyboardAvoidingView>
+        </View>
+      )}
+    </ScreenContainer>
   );
 };
 
@@ -159,113 +158,165 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
+  topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
+  navTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.text,
   },
-  subtitle: {
-    fontSize: 14,
+  listHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  headerCol: {
+    fontSize: 12,
+    fontWeight: '600',
     color: Colors.textSecondary,
   },
-  refreshBtn: {
-    padding: 10,
-    backgroundColor: 'rgba(229, 57, 53, 0.05)',
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  cell: {
+    justifyContent: 'center',
+  },
+  dropIcon: {
+    marginRight: 8,
+  },
+  groupText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  unitsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 12,
   },
-  scrollContent: {
-    paddingBottom: 20,
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
-  grid: {
+  buttonGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginTop: 24,
   },
-  stockCard: {
+  primaryBtn: {
     width: '48%',
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 24,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  groupLabel: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: Colors.text,
-  },
-  lowBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(229, 57, 53, 0.1)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  lowText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: Colors.error,
-    marginLeft: 3,
-  },
-  controlRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 14,
-    padding: 4,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  stockInput: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.text,
-    width: 40,
-    textAlign: 'center',
-  },
-  saveBtn: {
     backgroundColor: Colors.primary,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 18,
-    borderRadius: 20,
-    marginTop: 10,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 5,
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  disabledBtn: {
-    opacity: 0.7,
-  },
-  saveBtnText: {
+  primaryBtnText: {
     color: '#fff',
-    fontWeight: '800',
-    fontSize: 16,
-    marginLeft: 10,
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  outlineBtn: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  outlineBtnText: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  inputBox: {
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 16,
+    fontSize: 15,
+    color: Colors.text,
+  },
+  inputText: {
+    fontSize: 15,
+    color: Colors.text,
+  },
+  updateBtn: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  cancelBtn: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
 

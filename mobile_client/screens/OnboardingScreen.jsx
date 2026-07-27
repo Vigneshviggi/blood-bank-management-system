@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'rea
 import { Colors } from '../constants/Theme';
 import { ArrowRight } from 'lucide-react-native';
 import Animated, { FadeIn, FadeOut, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,16 +31,25 @@ const onboardingData = [
 const OnboardingScreen = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const finishOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('hasOnboarded', 'true');
+    } catch (e) {
+      console.log('Failed to save onboarding state');
+    }
+    navigation.replace('Login');
+  };
+
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigation.replace('Login');
+      finishOnboarding();
     }
   };
 
   const handleSkip = () => {
-    navigation.replace('Login');
+    finishOnboarding();
   };
 
   return (

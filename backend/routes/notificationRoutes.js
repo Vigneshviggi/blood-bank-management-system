@@ -1,17 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const { verifyToken } = require('../middleware/authMiddleware');
 
 // Get all notifications for a user (and global)
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
-    const { userId } = req.query;
+    const userId = req.user._id || req.user.id;
     const query = {
       $or: [
-        { userId: userId || null },
+        { userId },
+        { userId: null },
         { userId: { $exists: false } }
       ]
     };
+
+    if (req.query.isRead !== undefined) {
+      query.isRead = req.query.isRead === 'true';
+    }
+
     const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(50);
     res.json(notifications);
   } catch (error) {
@@ -19,15 +26,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create a notification
-router.post('/', async (req, res) => {
+// Create a notification (Internal use mostly)
+router.post('/', verifyToken, async (req, res) => {
   try {
     const newNotification = new Notification(req.body);
     await newNotification.save();
     
     // Emit socket event
     const io = req.app.get('socketio');
-    io.emit('new_notification', newNotification);
+    if (io) io.emit('new_notification', newNotification);
 
     res.status(201).json({ success: true, data: newNotification });
   } catch (error) {
@@ -36,7 +43,7 @@ router.post('/', async (req, res) => {
 });
 
 // Mark as read
-router.put('/read/:id', async (req, res) => {
+router.put('/read/:id', verifyToken, async (req, res) => {
   try {
     const notification = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
     res.json({ success: true, data: notification });
@@ -46,10 +53,10 @@ router.put('/read/:id', async (req, res) => {
 });
 
 // Mark all as read
-router.put('/read-all', async (req, res) => {
+router.put('/read-all', verifyToken, async (req, res) => {
   try {
-    const { userId } = req.body;
-    await Notification.updateMany({ userId: userId || null, isRead: false }, { isRead: true });
+    const userId = req.user._id || req.user.id;
+    await Notification.updateMany({ userId, isRead: false }, { isRead: true });
     res.json({ success: true, message: 'All notifications marked as read' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -57,10 +64,10 @@ router.put('/read-all', async (req, res) => {
 });
 
 // Clear all notifications
-router.delete('/clear', async (req, res) => {
+router.delete('/clear', verifyToken, async (req, res) => {
   try {
-    const { userId } = req.query;
-    await Notification.deleteMany({ userId: userId || null });
+    const userId = req.user._id || req.user.id;
+    await Notification.deleteMany({ userId });
     res.json({ success: true, message: 'Notifications cleared' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

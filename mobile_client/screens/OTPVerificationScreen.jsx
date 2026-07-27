@@ -20,7 +20,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      await api.post('/api/auth/verify-otp', { email, otp });
+      await api.post('/auth/verify-otp', { email, otp });
       Alert.alert(
         'Verified!',
         'Your account has been verified. You can now login.',
@@ -35,7 +35,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
   const handleResend = async () => {
     try {
-      await api.post('/api/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
       Alert.alert('Success', 'OTP has been resent to your email.');
     } catch (err) {
       Alert.alert('Error', 'Failed to resend OTP');

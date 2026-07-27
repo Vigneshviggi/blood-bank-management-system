@@ -16,6 +16,8 @@ const responseRoutes = require("./routes/responseRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const heroRoutes = require("./routes/heroRoutes");
 const featureRoutes = require("./routes/featureRoutes");
+const screeningRoutes = require("./routes/screeningRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
 
 
 
@@ -39,6 +41,21 @@ io.on('connection', (socket) => {
   socket.on('sendNotification', (data) => {
     // Broadcast to all clients (customize as needed)
     io.emit('receiveNotification', data);
+  });
+
+  socket.on('emergencySOS', (data) => {
+    console.log('EMERGENCY SOS RECEIVED', data);
+    io.emit('emergency_alert', {
+      title: 'CRITICAL EMERGENCY SOS',
+      message: `${data.name || 'A user'} triggered an SOS nearby.`,
+      type: 'emergency',
+      coords: data.coords
+    });
+  });
+
+  socket.on('updateLocation', (data) => {
+    // data should contain { requestId, userId, coords }
+    io.emit('locationUpdated', data);
   });
 
   socket.on('disconnect', () => {
@@ -81,6 +98,23 @@ app.use("/api/responses", responseRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/hero", heroRoutes);
 app.use("/api/features", featureRoutes);
+
+// Phase 2 Routes
+app.use("/api/screenings", screeningRoutes);
+app.use("/api/appointments", appointmentRoutes);
+
+// Phase 3 Routes
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const bloodBankRoutes = require("./routes/bloodBankRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/blood-bank", bloodBankRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/admin", adminRoutes);
 
 
 

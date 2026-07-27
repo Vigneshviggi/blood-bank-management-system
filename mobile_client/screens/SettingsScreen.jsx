@@ -4,11 +4,13 @@ import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
 import Badge from '../components/ui/Badge';
 import { Colors } from '../constants/Theme';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const SettingsScreen = () => {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [locationSharing, setLocationSharing] = useState(true);
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
 
   return (
     <ScreenContainer>
@@ -46,7 +48,7 @@ const SettingsScreen = () => {
 
       <GlassCard style={styles.card}>
         <Text style={styles.sectionTitle}>Security</Text>
-        <TouchableOpacity style={styles.actionRow}>
+        <TouchableOpacity style={styles.actionRow} onPress={() => setIsPasswordModalVisible(true)}>
           <Text style={styles.actionLabel}>Change Password</Text>
           <Text style={styles.actionArrow}>›</Text>
         </TouchableOpacity>
@@ -56,6 +58,11 @@ const SettingsScreen = () => {
           <Text style={styles.actionArrow}>›</Text>
         </TouchableOpacity>
       </GlassCard>
+
+      <ChangePasswordModal 
+        visible={isPasswordModalVisible} 
+        onClose={() => setIsPasswordModalVisible(false)} 
+      />
     </ScreenContainer>
   );
 };

@@ -25,9 +25,9 @@ const AdminDashboard = ({ navigation }) => {
   const fetchAdminStats = async () => {
     try {
       const [usersRes, hospitalsRes, requestsRes] = await Promise.all([
-        api.get('/api/users'),
-        api.get('/api/hospitals'),
-        api.get('/api/requests')
+        api.get('/users'),
+        api.get('/hospitals'),
+        api.get('/requests')
       ]);
 
       const hospitals = hospitalsRes.data || [];

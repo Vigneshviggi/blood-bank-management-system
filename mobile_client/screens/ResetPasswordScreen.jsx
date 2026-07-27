@@ -22,7 +22,7 @@ const ResetPasswordScreen = ({ navigation, route }) => {
 
     setLoading(true);
     try {
-      await api.post('/api/auth/reset-password', { email, otp, newPassword });
+      await api.post('/auth/reset-password', { email, otp, newPassword });
       Alert.alert(
         'Success',
         'Your password has been reset successfully.',

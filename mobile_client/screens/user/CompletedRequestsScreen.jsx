@@ -17,7 +17,7 @@ const CompletedRequestsScreen = ({ navigation }) => {
 
   const fetchCompleted = async () => {
     try {
-      const res = await api.get('/api/requests?status=Completed');
+      const res = await api.get('/requests?status=Completed');
       const filtered = res.data.filter((request) => {
         const userId = String(user?._id || user?.id);
         return String(request.requesterId) === userId || request.responses?.some((response) => String(response.responderId) === userId);

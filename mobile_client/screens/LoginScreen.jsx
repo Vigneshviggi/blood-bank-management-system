@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import ScreenContainer from '../components/ScreenContainer';
@@ -7,14 +7,42 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
+import * as LocalAuthentication from 'expo-local-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Fingerprint } from 'lucide-react-native';
+
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+  const GSignIn = require('@react-native-google-signin/google-signin');
+  GoogleSignin = GSignIn.GoogleSignin;
+  statusCodes = GSignIn.statusCodes;
+  GoogleSignin.configure({
+    webClientId: 'your-web-client-id.apps.googleusercontent.com', // Required for ID token
+    offlineAccess: false,
+  });
+} catch (e) {
+  console.log('Google Signin native module not found, likely running in Expo Go.');
+}
 
 const LoginScreen = ({ navigation }) => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   
-  const { login } = useContext(AuthContext);
+  const { login, googleLogin } = useContext(AuthContext);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const savedToken = await AsyncStorage.getItem('token');
+      setIsBiometricSupported(compatible && savedToken !== null);
+    };
+    checkBiometrics();
+  }, []);
 
   const handleLogin = async () => {
     if (!identifier || !password) {
@@ -25,12 +53,70 @@ const LoginScreen = ({ navigation }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/users/login', { identifier, password });
+      const res = await api.post('/users/login', { identifier, password });
       await login(res.data.token, res.data.user);
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const biometricAuth = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Login with Biometrics',
+        fallbackLabel: 'Use password',
+      });
+      if (biometricAuth.success) {
+        // Here we ideally fetch the stored token or user credentials and re-authenticate.
+        // For simplicity, we assume if the token is valid, we just re-hydrate context.
+        // In a real app, you might want to call a /me endpoint to refresh the token/user.
+        const token = await AsyncStorage.getItem('token');
+        const user = await AsyncStorage.getItem('user');
+        if (token && user) {
+          await login(token, JSON.parse(user));
+        } else {
+          Alert.alert("Error", "Session expired. Please log in with password.");
+        }
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!GoogleSignin) {
+      Alert.alert(
+        'Not Supported in Expo Go',
+        'Google Sign-In requires custom native code. Please build a custom dev client (e.g., npx expo run:android).'
+      );
+      return;
+    }
+    
+    setGoogleLoading(true);
+    setError('');
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = userInfo.idToken || userInfo.data?.idToken; // Depends on library version
+      
+      const result = await googleLogin(idToken);
+      if (!result.success) {
+        setError(result.error || 'Google login failed');
+      }
+    } catch (error) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled the login flow
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        // operation (e.g. sign in) is in progress already
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        setError('Play services not available or outdated');
+      } else {
+        setError('Some other error happened');
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -53,7 +139,6 @@ const LoginScreen = ({ navigation }) => {
 
           <Input 
             label="Email or Phone"
-            placeholder="name@example.com or +1 234 567 890"
             value={identifier}
             onChangeText={setIdentifier}
             keyboardType="email-address"
@@ -62,7 +147,6 @@ const LoginScreen = ({ navigation }) => {
 
           <Input 
             label="Password"
-            placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -81,6 +165,17 @@ const LoginScreen = ({ navigation }) => {
             loading={loading}
             style={styles.loginBtn}
           />
+          
+          {isBiometricSupported && (
+            <TouchableOpacity style={styles.biometricBtn} onPress={handleBiometricLogin}>
+              <Fingerprint size={24} color={Colors.primary} />
+              <Text style={styles.biometricText}>Login with Biometrics</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleLogin} disabled={googleLoading}>
+            <Text style={styles.googleBtnText}>{googleLoading ? 'Signing in...' : 'Continue with Google'}</Text>
+          </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
@@ -148,6 +243,40 @@ const styles = StyleSheet.create({
   },
   loginBtn: {
     marginTop: 10,
+  },
+  biometricBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+  },
+  biometricText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    backgroundColor: '#fff',
+  },
+  googleBtnText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

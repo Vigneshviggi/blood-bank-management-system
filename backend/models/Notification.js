@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // null for global
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  type: { 
-    type: String, 
-    enum: ['blood_request', 'camp_update', 'donor_response', 'hospital_alert', 'system'], 
-    default: 'system' 
+  type: {
+    type: String,
+    enum: ['emergency', 'camp', 'appointment', 'blood_available', 'blood_request', 'donation_reminder', 'inventory', 'system', 'donor_response', 'hospital_alert', 'camp_update'],
+    default: 'system'
   },
   urgency: {
     type: String,
@@ -15,6 +15,8 @@ const notificationSchema = new mongoose.Schema({
     default: 'medium'
   },
   redirectUrl: { type: String },
+  actions: [{ type: String }],
+  payload: { type: mongoose.Schema.Types.Mixed, default: {} },
   isRead: { type: Boolean, default: false },
 }, { timestamps: true });
 

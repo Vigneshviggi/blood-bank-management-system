@@ -20,7 +20,7 @@ const RequestHistoryScreen = ({ navigation }) => {
       if (!user) return;
       setLoading(true);
       try {
-        const res = await api.get('/api/requests');
+        const res = await api.get('/requests');
         const history = res.data.filter(req => 
           String(req.requesterId) === String(user._id || user.id) || 
           (req.responses && req.responses.some(resp => String(resp.responderId) === String(user._id || user.id)))
@@ -38,7 +38,7 @@ const RequestHistoryScreen = ({ navigation }) => {
   const onRefresh = async () => {
     setRefreshing(true);
     setLoading(false);
-    const res = await api.get('/api/requests');
+    const res = await api.get('/requests');
     const history = res.data.filter(req => 
       String(req.requesterId) === String(user._id || user.id) || 
       (req.responses && req.responses.some(resp => String(resp.responderId) === String(user._id || user.id)))

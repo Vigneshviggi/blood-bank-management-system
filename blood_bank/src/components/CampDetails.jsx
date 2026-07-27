@@ -11,10 +11,12 @@ export default function CampDetails() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showLoading, hideLoading } = useLoading()
-  
+
   const [camp, setCamp] = useState(null)
   const [registration, setRegistration] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [userCoords, setUserCoords] = useState(null)
+  const [routePreview, setRoutePreview] = useState(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,6 +27,24 @@ export default function CampDetails() {
         ])
         setCamp(campData)
         setRegistration(regData)
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((position) => {
+            const current = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }
+            setUserCoords(current)
+
+            if (campData.latitude && campData.longitude) {
+              const distanceKm = getDistanceKm(current.latitude, current.longitude, campData.latitude, campData.longitude)
+              const etaMinutes = Math.max(5, Math.round(distanceKm * 3.5))
+              setRoutePreview({ distanceKm, etaMinutes })
+            }
+          }, () => {
+            console.warn('Location unavailable for route preview')
+          })
+        }
       } catch (e) {
         console.error("Failed to load camp details", e)
       } finally {
@@ -33,6 +53,42 @@ export default function CampDetails() {
     }
     loadData()
   }, [id, user])
+
+  const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+    const toRad = (value) => (value * Math.PI) / 180
+    const earthRadiusKm = 6371
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return earthRadiusKm * c
+  }
+
+  const openExternalMap = (type) => {
+    if (!camp?.latitude || !camp?.longitude) return
+
+    const q = `${camp.latitude},${camp.longitude}`
+    const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${q}`
+    const appleUrl = `https://maps.apple.com/?daddr=${q}`
+
+    if (type === 'google') {
+      window.open(googleUrl, '_blank', 'noopener,noreferrer')
+    } else if (type === 'apple') {
+      window.open(appleUrl, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const shareLocation = async () => {
+    if (!camp) return
+    const shareText = `${camp.title} • ${camp.location} • ${camp.latitude}, ${camp.longitude}`
+
+    if (navigator.share) {
+      await navigator.share({ title: camp.title, text: shareText })
+    } else {
+      navigator.clipboard?.writeText(shareText)
+      toast.success('Location details copied to clipboard')
+    }
+  }
 
   const handleRegister = async () => {
     showLoading('Securing your spot...')
@@ -131,6 +187,53 @@ export default function CampDetails() {
               <p className="text-slate-600 dark:text-gray-400 font-medium leading-relaxed text-lg">
                 {camp.description}
               </p>
+
+              <div className="mt-8 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-gray-700 bg-slate-50 dark:bg-gray-900">
+                <iframe
+                  title="Camp Map"
+                  src={`https://www.google.com/maps?q=${camp.latitude || 0},${camp.longitude || 0}&z=14&output=embed`}
+                  className="w-full h-72"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => openExternalMap('google')}
+                  className="px-4 py-3 rounded-2xl bg-red-600 text-white text-sm font-black"
+                >
+                  Navigate
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openExternalMap('google')}
+                  className="px-4 py-3 rounded-2xl bg-slate-900 dark:bg-slate-700 text-white text-sm font-black"
+                >
+                  Open in Google Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openExternalMap('apple')}
+                  className="px-4 py-3 rounded-2xl bg-sky-600 text-white text-sm font-black"
+                >
+                  Open in Apple Maps
+                </button>
+                <button
+                  type="button"
+                  onClick={shareLocation}
+                  className="px-4 py-3 rounded-2xl bg-emerald-600 text-white text-sm font-black"
+                >
+                  Share Location
+                </button>
+              </div>
+
+              {routePreview && (
+                <div className="mt-6 rounded-[2rem] bg-red-50 dark:bg-red-950/20 p-5 text-sm font-bold text-slate-700 dark:text-slate-200">
+                  Estimated Distance: {routePreview.distanceKm.toFixed(1)} km • ETA {routePreview.etaMinutes} mins
+                </div>
+              )}
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mt-10">
                 <div className="flex gap-4">
@@ -149,6 +252,16 @@ export default function CampDetails() {
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Timing</p>
                     <p className="font-black text-slate-900 dark:text-white">{camp.startTime} - {camp.endTime}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-900/10 flex items-center justify-center text-violet-600 shrink-0">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Address</p>
+                    <p className="font-black text-slate-900 dark:text-white">{camp.fullAddress || camp.location}</p>
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ const RequestForm = ({ onSuccess, type }) => {
       return;
     }
     try {
-      await api.post('/api/requests', { ...form, type });
+      await api.post('/requests', { ...form, type });
       setSuccess('Request submitted successfully!');
       setForm({
         bloodGroup: '',

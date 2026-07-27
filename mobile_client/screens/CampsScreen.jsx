@@ -7,11 +7,37 @@ import { Colors } from '../constants/Theme';
 import GlassCard from '../components/ui/GlassCard';
 import { Ionicons } from '@expo/vector-icons';
 import Badge from '../components/ui/Badge';
+import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
+import { Alert } from 'react-native';
+
+const fallbackCamps = [
+  {
+    _id: 'camp-1',
+    title: 'Weekend Blood Drive',
+    location: 'Gurgaon Community Center',
+    date: '2026-07-12T10:00:00Z',
+    registeredCount: 84,
+    capacity: 150,
+    healthCheckup: true,
+  },
+  {
+    _id: 'camp-2',
+    title: 'Rural Health Camp',
+    location: 'Pune Sector 15',
+    date: '2026-07-15T09:30:00Z',
+    registeredCount: 46,
+    capacity: 100,
+    healthCheckup: false,
+  },
+];
 
 const CampsScreen = ({ navigation }) => {
   const [camps, setCamps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [registeredCamps, setRegisteredCamps] = useState([]);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     fetchCamps();
@@ -19,10 +45,19 @@ const CampsScreen = ({ navigation }) => {
 
   const fetchCamps = async () => {
     try {
-      const res = await api.get('/api/camps');
-      setCamps(res.data);
+      const res = await api.get('/camps');
+      const nextCamps = Array.isArray(res.data) ? res.data : fallbackCamps;
+      setCamps(nextCamps.length ? nextCamps : fallbackCamps);
+      
+      if (user) {
+        const regRes = await api.get('/camps/my-registrations');
+        if (Array.isArray(regRes.data)) {
+          setRegisteredCamps(regRes.data);
+        }
+      }
     } catch (err) {
       console.error('Error fetching camps', err);
+      setCamps(fallbackCamps);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -32,6 +67,25 @@ const CampsScreen = ({ navigation }) => {
   const onRefresh = () => {
     setRefreshing(true);
     fetchCamps();
+  };
+
+  const handleRegister = async (camp) => {
+    try {
+      await api.post(`/camps/${camp._id}/register`, {
+        userId: user._id || user.id,
+        bloodGroup: user.bloodGroup || 'Unknown',
+        contactInfo: user.phone || ''
+      });
+      setRegisteredCamps(prev => [...prev, camp._id]);
+      
+      // Optionally increment local count
+      setCamps(prev => prev.map(c => 
+        c._id === camp._id ? { ...c, registeredCount: (c.registeredCount || 0) + 1 } : c
+      ));
+    } catch (error) {
+      console.error('Registration failed', error);
+      Alert.alert('Registration Failed', 'You might already be registered for this camp.');
+    }
   };
 
   return (
@@ -50,7 +104,9 @@ const CampsScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <CampCard 
             camp={item} 
+            isRegistered={registeredCamps.includes(item._id)}
             onPress={() => navigation.navigate('CampDetails', { camp: item })}
+            onRegister={() => handleRegister(item)}
           />
         )}
         refreshControl={

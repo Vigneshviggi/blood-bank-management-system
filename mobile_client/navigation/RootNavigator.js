@@ -8,6 +8,12 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import OTPVerificationScreen from '../screens/OTPVerificationScreen';
 import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import MainNavigator from './MainNavigator';
+import GlobalSearchScreen from '../screens/GlobalSearchScreen';
+import LiveMapScreen from '../screens/LiveMapScreen';
+import SOSScreen from '../screens/SOSScreen';
+import LiveTrackingScreen from '../screens/LiveTrackingScreen';
+import CertificateScreen from '../screens/CertificateScreen';
+import CampAttendeesScreen from '../screens/CampAttendeesScreen';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
@@ -31,7 +37,19 @@ const RootNavigator = () => {
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
           </>
         ) : (
-          <Stack.Screen name="Main" component={MainNavigator} />
+          <>
+            <Stack.Screen name="Main" component={MainNavigator} />
+            <Stack.Screen 
+              name="GlobalSearch" 
+              component={GlobalSearchScreen} 
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+            <Stack.Screen name="LiveMap" component={LiveMapScreen} />
+            <Stack.Screen name="SOS" component={SOSScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="LiveTracking" component={LiveTrackingScreen} />
+            <Stack.Screen name="Certificate" component={CertificateScreen} />
+            <Stack.Screen name="CampAttendees" component={CampAttendeesScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

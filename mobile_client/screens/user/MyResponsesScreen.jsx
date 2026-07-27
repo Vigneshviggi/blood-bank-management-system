@@ -18,7 +18,7 @@ const MyResponsesScreen = ({ navigation }) => {
   const fetchResponses = async () => {
     if (!user) return;
     try {
-      const res = await api.get('/api/requests');
+      const res = await api.get('/requests');
       const filtered = res.data.filter((request) =>
         request.responses?.some((response) => String(response.responderId) === String(user._id || user.id))
       );
