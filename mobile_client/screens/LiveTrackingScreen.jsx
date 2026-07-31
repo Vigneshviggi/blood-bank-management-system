@@ -127,7 +127,7 @@ const LiveTrackingScreen = ({ route }) => {
               <Text style={styles.actionText}>Contact</Text>
             </TouchableOpacity>
             {isDonor && (
-              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#43a047' }]}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#0E9F6E' }]}>
                 <Navigation size={20} color="#fff" />
                 <Text style={styles.actionText}>Navigate</Text>
               </TouchableOpacity>
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: '#f5f5f5', borderRadius: 12,
+    backgroundColor: '#F4EEEC', borderRadius: 12,
   },
   title: { fontSize: 20, fontWeight: '700', color: Colors.text },
   map: { flex: 1 },

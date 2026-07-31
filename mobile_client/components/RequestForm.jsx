@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Picker, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import EmergencyBadge from '../components/EmergencyBadge';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import api from '../services/api';
@@ -10,6 +10,8 @@ const emergencyLevels = [
   { label: 'Medium', value: 'medium' },
   { label: 'Low', value: 'low' },
 ];
+const bloodGroupOptions = bloodGroups.map((group) => ({ label: group, value: group }));
+
 
 const RequestForm = ({ onSuccess, type }) => {
   const [form, setForm] = useState({
@@ -58,6 +60,24 @@ const RequestForm = ({ onSuccess, type }) => {
     setLoading(false);
   };
 
+  const renderOptionSelector = (options, selectedValue, onChange) => (
+    <View style={styles.optionGroup}>
+      {options.map((option) => {
+        const isSelected = selectedValue === option.value;
+        return (
+          <TouchableOpacity
+            key={option.value}
+            style={[styles.optionChip, isSelected && styles.optionChipActive]}
+            onPress={() => onChange(option.value)}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.optionText, isSelected && styles.optionTextActive]}>{option.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Blood Request Form</Text>
@@ -65,14 +85,7 @@ const RequestForm = ({ onSuccess, type }) => {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {success ? <Text style={styles.success}>{success}</Text> : null}
       <Text style={styles.label}>Blood Group *</Text>
-      <Picker
-        selectedValue={form.bloodGroup}
-        onValueChange={v => handleChange('bloodGroup', v)}
-        style={styles.input}
-      >
-        <Picker.Item label="Select blood group" value="" />
-        {bloodGroups.map(bg => <Picker.Item key={bg} label={bg} value={bg} />)}
-      </Picker>
+      {renderOptionSelector(bloodGroupOptions, form.bloodGroup, (value) => handleChange('bloodGroup', value))}
       <Text style={styles.label}>Units Required *</Text>
       <TextInput
         style={styles.input}
@@ -82,13 +95,7 @@ const RequestForm = ({ onSuccess, type }) => {
         placeholder="Units"
       />
       <Text style={styles.label}>Emergency Priority *</Text>
-      <Picker
-        selectedValue={form.emergencyLevel}
-        onValueChange={v => handleChange('emergencyLevel', v)}
-        style={styles.input}
-      >
-        {emergencyLevels.map(e => <Picker.Item key={e.value} label={e.label} value={e.value} />)}
-      </Picker>
+      {renderOptionSelector(emergencyLevels, form.emergencyLevel, (value) => handleChange('emergencyLevel', value))}
       <EmergencyBadge level={form.emergencyLevel} />
       <Text style={styles.label}>Patient Condition</Text>
       <TextInput
@@ -143,25 +150,50 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#e53935',
+    color: '#C81E4A',
     marginBottom: 10,
   },
   label: {
     fontWeight: 'bold',
     marginTop: 8,
     marginBottom: 2,
-    color: '#444',
+    color: '#1D1B20',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0D3D3',
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#FBF7F6',
+  },
+  optionGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  optionChip: {
+    borderWidth: 1,
+    borderColor: '#E0D3D3',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#FFF',
+  },
+  optionChipActive: {
+    backgroundColor: '#C81E4A',
+    borderColor: '#C81E4A',
+  },
+  optionText: {
+    color: '#1D1B20',
+    fontWeight: '700',
+  },
+  optionTextActive: {
+    color: '#FFF',
   },
   submitBtn: {
-    backgroundColor: '#e53935',
+    backgroundColor: '#C81E4A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -173,11 +205,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   error: {
-    color: '#e53935',
+    color: '#C81E4A',
     marginBottom: 8,
   },
   success: {
-    color: '#43a047',
+    color: '#0E9F6E',
     marginBottom: 8,
   },
 });

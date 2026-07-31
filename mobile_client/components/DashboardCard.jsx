@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 
 const DashboardCard = ({ type, navigation, onPress }) => {
   // Render different cards based on type (emergency, hospitals, donationHistory, camps, inventory, analytics, etc.)
@@ -80,51 +81,61 @@ const DashboardCard = ({ type, navigation, onPress }) => {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
-      {cta ? (
-        <TouchableOpacity style={styles.ctaBtn} onPress={handlePress}>
-          <Text style={styles.ctaText}>{cta}</Text>
-        </TouchableOpacity>
-      ) : null}
+      <View style={styles.accentBar} />
+      <View style={styles.body}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
+        {cta ? (
+          <TouchableOpacity style={styles.ctaBtn} onPress={handlePress} activeOpacity={0.85}>
+            <Text style={styles.ctaText}>{cta}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 20,
-    padding: 20,
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    overflow: 'hidden',
+    ...Shadows.soft,
+  },
+  accentBar: {
+    width: 6,
+    backgroundColor: Colors.primary,
+  },
+  body: {
+    flex: 1,
+    padding: 20,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#e53935',
-    marginBottom: 8,
+    fontSize: 17,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 6,
+    fontFamily: Typography.heading,
   },
   description: {
-    fontSize: 15,
-    color: '#555',
-    marginBottom: 12,
+    fontSize: 14,
+    color: Colors.textSecondary,
+    marginBottom: 14,
+    lineHeight: 20,
   },
   ctaBtn: {
-    backgroundColor: '#e53935',
-    borderRadius: 12,
-    paddingVertical: 8,
+    backgroundColor: Colors.primarySoft,
+    borderRadius: Radius.sm,
+    paddingVertical: 10,
     paddingHorizontal: 18,
     alignSelf: 'flex-start',
   },
   ctaText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
+    color: Colors.primary,
+    fontWeight: '800',
+    fontSize: 13,
   },
 });
 

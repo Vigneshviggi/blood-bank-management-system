@@ -1,39 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity, ActivityIndicator } from 'react-native';
 import ScreenContainer from '../../components/ScreenContainer';
 import RequestCard from '../../components/RequestCard';
 import api from '../../services/api';
-import { Colors } from '../../constants/Theme';
+import { Colors, Radius, Shadows, Typography } from '../../constants/Theme';
 import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '../../components/ui/GlassCard';
 import Badge from '../../components/ui/Badge';
-
-const fallbackRequests = [
-  {
-    _id: 'req-1',
-    patientName: 'Aarav',
-    location: 'Bandra, Mumbai',
-    bloodGroup: 'O+',
-    unitsNeeded: 2,
-    emergencyLevel: 'High',
-    reason: 'Emergency surgery planned this evening',
-    requiredDate: '2026-07-09T10:00:00Z',
-    status: 'Pending',
-    requesterType: 'hospital',
-  },
-  {
-    _id: 'req-2',
-    patientName: 'Meera',
-    location: 'Koramangala, Bengaluru',
-    bloodGroup: 'AB-',
-    unitsNeeded: 1,
-    emergencyLevel: 'Critical',
-    reason: 'Road accident victim needs immediate transfusion',
-    requiredDate: '2026-07-08T18:30:00Z',
-    status: 'Pending',
-    requesterType: 'hospital',
-  },
-];
+import EmptyStateView from '../../components/EmptyStateView';
 
 const RequestsScreen = ({ navigation }) => {
   const [requests, setRequests] = useState([]);
@@ -48,11 +22,16 @@ const RequestsScreen = ({ navigation }) => {
   const fetchRequests = async () => {
     try {
       const res = await api.get('/requests');
-      const nextRequests = Array.isArray(res.data) ? res.data : fallbackRequests;
-      setRequests(nextRequests.length ? nextRequests : fallbackRequests);
+      if (Array.isArray(res.data)) {
+        setRequests(res.data);
+      } else if (Array.isArray(res.data?.data)) {
+        setRequests(res.data.data);
+      } else {
+        setRequests([]);
+      }
     } catch (err) {
       console.error('Error fetching requests', err);
-      setRequests(fallbackRequests);
+      setRequests([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,10 +51,11 @@ const RequestsScreen = ({ navigation }) => {
         { key: 'critical', label: 'Critical' },
         { key: 'pending', label: 'Pending' },
       ].map((option) => (
-        <TouchableOpacity 
+        <TouchableOpacity
           key={option.key}
           style={[styles.filterBtn, filter === option.key && styles.filterBtnActive]}
           onPress={() => setFilter(option.key)}
+          activeOpacity={0.85}
         >
           <Text style={[styles.filterText, filter === option.key && styles.filterTextActive]}>
             {option.label}
@@ -101,45 +81,47 @@ const RequestsScreen = ({ navigation }) => {
         <Badge label={`${requests.length} Live`} variant="primary" />
       </View>
 
-      <TouchableOpacity 
-        style={styles.newRequestBtn} 
+      <TouchableOpacity
+        style={styles.newRequestBtn}
         onPress={() => navigation.navigate('BloodRequest')}
+        activeOpacity={0.9}
       >
-        <Ionicons name="add-circle-outline" size={20} color="#fff" style={{marginRight: 8}} />
+        <Ionicons name="add-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
         <Text style={styles.newRequestBtnText}>Request Blood</Text>
       </TouchableOpacity>
 
       <View style={styles.quickRow}>
-        <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('MyResponses')}>
+        <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('MyResponses')} activeOpacity={0.85}>
           <Text style={styles.quickChipText}>My Responses</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.quickChip} onPress={() => navigation.navigate('CompletedRequests')}>
+        <TouchableOpacity style={[styles.quickChip, { marginRight: 0 }]} onPress={() => navigation.navigate('CompletedRequests')} activeOpacity={0.85}>
           <Text style={styles.quickChipText}>Completed</Text>
         </TouchableOpacity>
       </View>
 
       {renderFilter()}
 
-      <FlatList
-        data={filteredRequests}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <RequestCard 
-            request={item} 
-            onRespond={() => navigation.navigate('RequestDetails', { request: item })}
-          />
-        )}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
-        }
-        ListEmptyComponent={
-          <GlassCard style={styles.emptyCard}>
-            <Ionicons name="search-outline" size={48} color={Colors.textSecondary} />
-            <Text style={styles.emptyText}>No blood requests found matching your filters.</Text>
-          </GlassCard>
-        }
-        contentContainerStyle={styles.listContent}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 48 }} />
+      ) : (
+        <FlatList
+          data={filteredRequests}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <RequestCard
+              request={item}
+              onRespond={() => navigation.navigate('RequestDetails', { request: item })}
+            />
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+          }
+          ListEmptyComponent={
+            <EmptyStateView title="No requests" message="There are no blood requests available at the moment." />
+          }
+          contentContainerStyle={[styles.listContent, filteredRequests.length === 0 && { flex: 1 }]}
+        />
+      )}
     </ScreenContainer>
   );
 };
@@ -149,25 +131,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 20,
     flexWrap: 'wrap',
-    gap: 8,
   },
   filterBtn: {
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
     alignItems: 'center',
     borderRadius: 999,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.border,
   },
   filterBtnActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
-    elevation: 2,
   },
   filterText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.textSecondary,
   },
   filterTextActive: {
@@ -175,21 +155,23 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 28,
-    padding: 18,
+    borderRadius: Radius.xl,
+    padding: 20,
     marginBottom: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    ...Shadows.soft,
   },
   heroTextWrap: {
     flex: 1,
     paddingRight: 12,
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   heroSubtitle: {
     marginTop: 6,
@@ -197,35 +179,31 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   newRequestBtn: {
-    backgroundColor: '#E53935',
+    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingVertical: 15,
+    borderRadius: Radius.md,
     marginBottom: 16,
-    shadowColor: '#E53935',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    ...Shadows.glow,
   },
   newRequestBtnText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
   quickRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   quickChip: {
     flex: 1,
-    backgroundColor: 'rgba(217, 45, 32, 0.08)',
+    backgroundColor: Colors.primarySoft,
     paddingVertical: 12,
-    borderRadius: 16,
+    borderRadius: Radius.md,
     alignItems: 'center',
+    marginRight: 10,
   },
   quickChipText: {
     color: Colors.primary,
@@ -244,7 +222,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 15,
   },
 });
 

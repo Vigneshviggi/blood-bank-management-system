@@ -29,13 +29,13 @@ export default function SubmitButton({ title, onPress, isLoading, disabled }) {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#E53935',
+    backgroundColor: '#C81E4A',
     paddingVertical: 18,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
-    shadowColor: '#E53935',
+    shadowColor: '#C81E4A',
     shadowOpacity: 0.4,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

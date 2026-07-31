@@ -30,7 +30,7 @@ export default function FormInput({
           isFocused && styles.inputFocused,
           error && styles.inputError,
         ]}
-        placeholderTextColor="#666"
+        placeholderTextColor="#6E6771"
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         maxLength={maxLength}
@@ -61,14 +61,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   labelError: {
-    color: '#FF5252',
+    color: '#C81E4A',
   },
   charCount: {
-    color: '#888',
+    color: '#6E6771',
     fontSize: 12,
   },
   input: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#1D1B20',
     borderRadius: 12,
     padding: 16,
     color: '#FFF',
@@ -82,14 +82,14 @@ const styles = StyleSheet.create({
   },
   inputFocused: {
     borderColor: '#4A4A4A',
-    backgroundColor: '#333',
+    backgroundColor: '#1D1B20',
   },
   inputError: {
     borderColor: 'rgba(255, 82, 82, 0.5)',
     backgroundColor: 'rgba(255, 82, 82, 0.05)',
   },
   errorText: {
-    color: '#FF5252',
+    color: '#C81E4A',
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',

@@ -104,7 +104,7 @@ const MapScreen = () => {
             <Marker
               key={request._id || `request-${index}`}
               coordinate={{ latitude: lat, longitude: lon }}
-              pinColor="#D32F2F"
+              pinColor="#8F1338"
             >
               <Callout>
                 <View style={styles.callout}>
@@ -127,7 +127,7 @@ const MapScreen = () => {
             <Marker
               key={camp._id || `camp-${index}`}
               coordinate={{ latitude: lat, longitude: lon }}
-              pinColor="#FB8C00"
+              pinColor="#DC7609"
             >
               <Callout>
                 <View style={styles.callout}>

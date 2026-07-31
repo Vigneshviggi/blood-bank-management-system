@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   labelError: {
-    color: '#FF5252',
+    color: '#C81E4A',
   },
   counterRow: {
     flexDirection: 'row',
@@ -69,12 +69,12 @@ const styles = StyleSheet.create({
   button: {
     width: 52,
     height: 52,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#1D1B20',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#1D1B20',
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   errorText: {
-    color: '#FF5252',
+    color: '#C81E4A',
     fontSize: 12,
     marginTop: 8,
     fontWeight: '500',

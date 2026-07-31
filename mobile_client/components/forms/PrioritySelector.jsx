@@ -13,9 +13,9 @@ export default function PrioritySelector({ selectedPriority, onSelect }) {
         {PRIORITIES.map((level) => {
           const isActive = selectedPriority === level;
           
-          let activeColor = '#4CAF50'; // Normal
-          if (level === 'High') activeColor = '#FF9800';
-          if (level === 'Critical') activeColor = '#F44336';
+          let activeColor = '#0E9F6E'; // Normal
+          if (level === 'High') activeColor = '#DC7609';
+          if (level === 'Critical') activeColor = '#D92D20';
 
           return (
             <TouchableOpacity
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#1D1B20',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   text: {
-    color: '#AAA',
+    color: '#A79FA8',
     fontWeight: '700',
     fontSize: 12,
     letterSpacing: 0.5,

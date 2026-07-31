@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   card: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1D1B20',
     width: '100%',
     padding: 24,
     borderRadius: 24,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#1D1B20',
   },
   header: {
     flexDirection: 'row',
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   errorText: {
-    color: '#FF5252',
+    color: '#C81E4A',
     backgroundColor: 'rgba(255, 82, 82, 0.1)',
     padding: 12,
     borderRadius: 12,

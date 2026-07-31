@@ -54,7 +54,7 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
         <Text style={selectedName ? styles.inputText : styles.placeholderText}>
           {selectedName || 'Choose a hospital (Optional)'}
         </Text>
-        <Ionicons name="chevron-down" size={20} color="#888" />
+        <Ionicons name="chevron-down" size={20} color="#6E6771" />
       </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -74,12 +74,12 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
                 onPress={() => handleSelect(null)}
               >
                 <Text style={styles.modalItemText}>None / Any Hospital</Text>
-                {!selectedId && <Ionicons name="checkmark-circle" size={20} color="#E53935" />}
+                {!selectedId && <Ionicons name="checkmark-circle" size={20} color="#C81E4A" />}
               </TouchableOpacity>
               
               {isLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator color="#E53935" />
+                  <ActivityIndicator color="#C81E4A" />
                   <Text style={styles.loadingText}>Loading hospitals...</Text>
                 </View>
               ) : (
@@ -93,7 +93,7 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
                       <Text style={styles.modalItemText}>{h.name}</Text>
                       {h.address && <Text style={styles.modalItemSubtext}>{h.address}</Text>}
                     </View>
-                    {selectedId === h._id && <Ionicons name="checkmark-circle" size={20} color="#E53935" />}
+                    {selectedId === h._id && <Ionicons name="checkmark-circle" size={20} color="#C81E4A" />}
                   </TouchableOpacity>
                 ))
               )}
@@ -118,10 +118,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   labelError: {
-    color: '#FF5252',
+    color: '#C81E4A',
   },
   input: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#1D1B20',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -139,11 +139,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   placeholderText: {
-    color: '#888',
+    color: '#6E6771',
     fontSize: 16,
   },
   errorText: {
-    color: '#FF5252',
+    color: '#C81E4A',
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1D1B20',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   modalItem: {
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderBottomColor: '#1D1B20',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalItemSubtext: {
-    color: '#888',
+    color: '#6E6771',
     fontSize: 12,
     marginTop: 4,
   },
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#888',
+    color: '#6E6771',
     marginTop: 10,
     fontSize: 14,
   },

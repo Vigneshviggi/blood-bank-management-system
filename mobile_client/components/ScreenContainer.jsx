@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '../constants/Theme';
 
@@ -7,19 +7,25 @@ const ScreenContainer = ({ children, scrollable = true, style }) => {
   const Container = scrollable ? ScrollView : View;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.background}>
-        <View style={styles.glowTop} />
-        <View style={styles.glowBottom} />
-        <Container
-          style={[styles.container, style]}
-          contentContainerStyle={scrollable ? styles.contentContainer : undefined}
-          showsVerticalScrollIndicator={false}
-        >
-          {children}
-        </Container>
-      </View>
-    </SafeAreaView>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.background}>
+          <View style={styles.glowTop} />
+          <View style={styles.glowBottom} />
+          <Container
+            style={[styles.container, style]}
+            contentContainerStyle={scrollable ? styles.contentContainer : undefined}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </Container>
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -35,21 +41,21 @@ const styles = StyleSheet.create({
   },
   glowTop: {
     position: 'absolute',
-    top: -80,
-    right: -50,
-    width: 220,
-    height: 220,
-    borderRadius: 220,
-    backgroundColor: 'rgba(217, 45, 32, 0.08)',
+    top: -90,
+    right: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 240,
+    backgroundColor: 'rgba(200, 30, 74, 0.07)',
   },
   glowBottom: {
     position: 'absolute',
-    bottom: -100,
-    left: -80,
-    width: 260,
-    height: 260,
-    borderRadius: 260,
-    backgroundColor: 'rgba(23, 92, 211, 0.06)',
+    bottom: -110,
+    left: -90,
+    width: 280,
+    height: 280,
+    borderRadius: 280,
+    backgroundColor: 'rgba(15, 155, 142, 0.07)',
   },
   container: {
     flex: 1,

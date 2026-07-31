@@ -6,6 +6,8 @@ import AdminDashboard from '../screens/AdminDashboard';
 import UsersManagement from '../screens/UsersManagement';
 import HospitalsManagement from '../screens/HospitalsManagement';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import MonitoringScreen from '../screens/MonitoringScreen';
+import ReportsScreen from '../screens/ReportsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import RequestHistoryScreen from '../screens/RequestHistoryScreen';
@@ -21,15 +23,26 @@ const ProfileStack = () => (
   </Stack.Navigator>
 );
 
+const AdminHomeStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+    <Stack.Screen name="UsersManagement" component={UsersManagement} />
+    <Stack.Screen name="HospitalsManagement" component={HospitalsManagement} />
+    <Stack.Screen name="MonitoringScreen" component={MonitoringScreen} />
+    <Stack.Screen name="ReportsScreen" component={ReportsScreen} />
+  </Stack.Navigator>
+);
+
 const AdminTabs = () => {
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        animation: 'slide_from_right',
       }}
     >
-      <Tab.Screen name="Home" component={AdminDashboard} options={{ title: 'Home' }} />
+      <Tab.Screen name="Home" component={AdminHomeStack} options={{ title: 'Home' }} />
       <Tab.Screen name="Users" component={UsersManagement} options={{ title: 'Users' }} />
       <Tab.Screen name="Hospitals" component={HospitalsManagement} options={{ title: 'Hospitals' }} />
       <Tab.Screen name="Analytics" component={AnalyticsScreen} options={{ title: 'Stats' }} />

@@ -78,22 +78,22 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#e53935',
+    color: '#C81E4A',
     marginBottom: 10,
   },
   label: {
     fontWeight: 'bold',
     marginTop: 8,
     marginBottom: 2,
-    color: '#444',
+    color: '#1D1B20',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#E0D3D3',
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#FBF7F6',
   },
   actions: {
     flexDirection: 'row',
@@ -103,19 +103,19 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   acceptBtn: {
-    backgroundColor: '#43a047',
+    backgroundColor: '#0E9F6E',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,
   },
   maybeBtn: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: '#DC7609',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,
   },
   rejectBtn: {
-    backgroundColor: '#e53935',
+    backgroundColor: '#C81E4A',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 18,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeText: {
-    color: '#1976d2',
+    color: '#2D6CDF',
     fontWeight: 'bold',
     fontSize: 15,
   },

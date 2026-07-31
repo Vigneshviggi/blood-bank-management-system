@@ -21,7 +21,7 @@ export default function OfflineBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#ef4444', // red-500
+    backgroundColor: '#D92D20', // red-500
     paddingBottom: 8,
     alignItems: 'center',
     justifyContent: 'center',

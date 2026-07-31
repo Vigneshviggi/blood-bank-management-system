@@ -9,7 +9,7 @@ import { Plus, Minus, Save, RefreshCcw, Info } from 'lucide-react-native';
 
 const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 
-const InventoryScreen = () => {
+const InventoryScreen = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(true);
@@ -36,9 +36,9 @@ const InventoryScreen = () => {
   };
 
   const getStatus = (units) => {
-    if (units >= 20) return { label: 'Available', color: '#4CAF50', bg: '#E8F5E9' };
-    if (units >= 5) return { label: 'Low', color: '#FF9800', bg: '#FFF3E0' };
-    return { label: 'Critical', color: '#F44336', bg: '#FFEBEE' };
+    if (units >= 20) return { label: 'Available', color: '#0E9F6E', bg: '#E3F6F3' };
+    if (units >= 5) return { label: 'Low', color: '#DC7609', bg: '#FFF3E0' };
+    return { label: 'Critical', color: '#D92D20', bg: '#FDE7ED' };
   };
 
   const handleUpdateStock = async () => {
@@ -126,8 +126,18 @@ const InventoryScreen = () => {
             <Text style={styles.modalTitle}>Stock Update</Text>
             
             <Text style={styles.label}>Blood Group</Text>
-            <View style={styles.inputBox}>
-              <Text style={styles.inputText}>{selectedGroup}</Text>
+            <View style={styles.groupContainer}>
+              {bloodGroups.map(group => (
+                <TouchableOpacity 
+                  key={group}
+                  style={[styles.groupChip, selectedGroup === group && styles.activeChip]}
+                  onPress={() => setSelectedGroup(group)}
+                >
+                  <Text style={[styles.chipText, selectedGroup === group && styles.activeChipText]}>
+                    {group}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
 
             <Text style={styles.label}>Quantity (Units)</Text>
@@ -176,7 +186,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0E4E4',
   },
   headerCol: {
     fontSize: 12,
@@ -186,13 +196,14 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
+    paddingBottom: 100,
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+    borderBottomColor: '#F4EEEC',
   },
   cell: {
     justifyContent: 'center',
@@ -276,6 +287,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  groupContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -4,
+    marginBottom: 16,
+  },
+  groupChip: {
+    width: '23%',
+    paddingVertical: 12,
+    backgroundColor: '#F4EEEC',
+    borderRadius: 8,
+    alignItems: 'center',
+    margin: 4,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  activeChip: {
+    backgroundColor: '#FDE7ED',
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  activeChipText: {
+    color: Colors.primary,
+  },
   label: {
     fontSize: 13,
     fontWeight: '600',
@@ -284,7 +323,7 @@ const styles = StyleSheet.create({
   },
   inputBox: {
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     borderRadius: 8,
     padding: 14,
     marginBottom: 16,

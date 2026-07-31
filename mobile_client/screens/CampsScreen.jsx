@@ -1,36 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, Alert } from 'react-native';
 import ScreenContainer from '../components/ScreenContainer';
 import CampCard from '../components/CampCard';
 import api from '../services/api';
-import { Colors } from '../constants/Theme';
+import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 import GlassCard from '../components/ui/GlassCard';
+import EmptyStateView from '../components/EmptyStateView';
 import { Ionicons } from '@expo/vector-icons';
 import Badge from '../components/ui/Badge';
 import { AuthContext } from '../context/AuthContext';
-import { useContext } from 'react';
-import { Alert } from 'react-native';
-
-const fallbackCamps = [
-  {
-    _id: 'camp-1',
-    title: 'Weekend Blood Drive',
-    location: 'Gurgaon Community Center',
-    date: '2026-07-12T10:00:00Z',
-    registeredCount: 84,
-    capacity: 150,
-    healthCheckup: true,
-  },
-  {
-    _id: 'camp-2',
-    title: 'Rural Health Camp',
-    location: 'Pune Sector 15',
-    date: '2026-07-15T09:30:00Z',
-    registeredCount: 46,
-    capacity: 100,
-    healthCheckup: false,
-  },
-];
 
 const CampsScreen = ({ navigation }) => {
   const [camps, setCamps] = useState([]);
@@ -43,24 +21,34 @@ const CampsScreen = ({ navigation }) => {
     fetchCamps();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      fetchRegisteredCamps();
+    } else {
+      setRegisteredCamps([]);
+    }
+  }, [user]);
+
   const fetchCamps = async () => {
     try {
       const res = await api.get('/camps');
-      const nextCamps = Array.isArray(res.data) ? res.data : fallbackCamps;
-      setCamps(nextCamps.length ? nextCamps : fallbackCamps);
-      
-      if (user) {
-        const regRes = await api.get('/camps/my-registrations');
-        if (Array.isArray(regRes.data)) {
-          setRegisteredCamps(regRes.data);
-        }
-      }
+      setCamps(Array.isArray(res.data) ? res.data : res.data?.data || []);
     } catch (err) {
       console.error('Error fetching camps', err);
-      setCamps(fallbackCamps);
+      setCamps([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const fetchRegisteredCamps = async () => {
+    try {
+      const regRes = await api.get('/camps/my-registrations');
+      setRegisteredCamps(Array.isArray(regRes.data) ? regRes.data : regRes.data?.data || []);
+    } catch (err) {
+      console.error('Error fetching camp registrations', err);
+      setRegisteredCamps([]);
     }
   };
 
@@ -77,9 +65,8 @@ const CampsScreen = ({ navigation }) => {
         contactInfo: user.phone || ''
       });
       setRegisteredCamps(prev => [...prev, camp._id]);
-      
-      // Optionally increment local count
-      setCamps(prev => prev.map(c => 
+
+      setCamps(prev => prev.map(c =>
         c._id === camp._id ? { ...c, registeredCount: (c.registeredCount || 0) + 1 } : c
       ));
     } catch (error) {
@@ -102,8 +89,8 @@ const CampsScreen = ({ navigation }) => {
         data={camps}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <CampCard 
-            camp={item} 
+          <CampCard
+            camp={item}
             isRegistered={registeredCamps.includes(item._id)}
             onPress={() => navigation.navigate('CampDetails', { camp: item })}
             onRegister={() => handleRegister(item)}
@@ -113,10 +100,10 @@ const CampsScreen = ({ navigation }) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
         }
         ListEmptyComponent={
-          <GlassCard style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={48} color={Colors.textSecondary} />
-            <Text style={styles.emptyText}>No upcoming camps found.</Text>
-          </GlassCard>
+          <EmptyStateView
+            title="No upcoming camps"
+            message="There are no scheduled blood donation camps right now. Check back later for new events."
+          />
         }
         contentContainerStyle={styles.listContent}
       />
@@ -125,26 +112,25 @@ const CampsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: 20,
-  },
   heroCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 28,
-    padding: 18,
+    borderRadius: Radius.xl,
+    padding: 20,
     marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    ...Shadows.soft,
   },
   heroText: {
     flex: 1,
     paddingRight: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   subtitle: {
     marginTop: 6,
@@ -164,7 +150,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 15,
   },
 });
 

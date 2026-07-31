@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import ScreenContainer from '../../components/ScreenContainer';
 import GlassCard from '../../components/ui/GlassCard';
-import { Colors } from '../../constants/Theme';
+import { Colors, Radius, Typography } from '../../constants/Theme';
 import api from '../../services/api';
 import RequestCard from '../../components/RequestCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,10 +22,15 @@ const HomeScreen = ({ navigation }) => {
     try {
       const [requestsRes, statsRes] = await Promise.all([
         api.get('/requests?limit=3'),
-        api.get('/users/stats') // Assume this exists or mock it
+        api.get('/users/stats'),
       ]);
-      setRecentRequests(requestsRes.data);
-      if (statsRes.data) setStats(statsRes.data);
+      setRecentRequests(Array.isArray(requestsRes.data) ? requestsRes.data : requestsRes.data?.data || []);
+      const payload = statsRes.data?.stats || statsRes.data || {};
+      setStats({
+        donations: payload.donations ?? 0,
+        livesSaved: payload.livesSaved ?? 0,
+        upcomingCamps: payload.upcomingCamps ?? 0,
+      });
     } catch (err) {
       console.error('Error fetching home data', err);
     } finally {
@@ -39,9 +44,9 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.welcomeText}>Welcome back,</Text>
         <Text style={styles.nameText}>{user?.name || 'Hero'}</Text>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+      <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.85}>
         <View style={styles.profileBadge}>
-          <Ionicons name="person" size={24} color={Colors.primary} />
+          <Ionicons name="person" size={22} color={Colors.primary} />
         </View>
       </TouchableOpacity>
     </View>
@@ -50,17 +55,23 @@ const HomeScreen = ({ navigation }) => {
   const renderStats = () => (
     <View style={styles.statsContainer}>
       <GlassCard style={styles.statCard}>
-        <Ionicons name="water" size={24} color={Colors.primary} />
+        <View style={[styles.statIconChip, { backgroundColor: Colors.primarySoft }]}>
+          <Ionicons name="water" size={20} color={Colors.primary} />
+        </View>
         <Text style={styles.statValue}>{stats.donations}</Text>
         <Text style={styles.statLabel}>Donations</Text>
       </GlassCard>
       <GlassCard style={styles.statCard}>
-        <Ionicons name="heart" size={24} color="#E91E63" />
+        <View style={[styles.statIconChip, { backgroundColor: Colors.secondarySoft }]}>
+          <Ionicons name="heart" size={20} color={Colors.secondaryDark} />
+        </View>
         <Text style={styles.statValue}>{stats.livesSaved}</Text>
         <Text style={styles.statLabel}>Lives Saved</Text>
       </GlassCard>
       <GlassCard style={styles.statCard}>
-        <Ionicons name="calendar" size={24} color="#FF9800" />
+        <View style={[styles.statIconChip, { backgroundColor: '#FFF1DE' }]}>
+          <Ionicons name="calendar" size={20} color={Colors.warning} />
+        </View>
         <Text style={styles.statValue}>{stats.upcomingCamps}</Text>
         <Text style={styles.statLabel}>Camps</Text>
       </GlassCard>
@@ -81,38 +92,39 @@ const HomeScreen = ({ navigation }) => {
 
       {recentRequests.length > 0 ? (
         recentRequests.map((item) => (
-          <RequestCard 
-            key={item._id} 
-            request={item} 
+          <RequestCard
+            key={item._id}
+            request={item}
             onPress={() => navigation.navigate('RequestDetails', { request: item })}
           />
         ))
       ) : (
         <GlassCard style={styles.emptyCard}>
+          <Ionicons name="checkmark-circle-outline" size={28} color={Colors.textMuted} />
           <Text style={styles.emptyText}>No emergency requests nearby.</Text>
         </GlassCard>
       )}
 
-      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+      <View style={[styles.sectionHeader, { marginTop: 28 }]}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
       </View>
 
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Camps')}>
-          <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
-            <Ionicons name="megaphone" size={24} color="#1E88E5" />
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Camps')} activeOpacity={0.85}>
+          <View style={[styles.actionIcon, { backgroundColor: Colors.secondarySoft }]}>
+            <Ionicons name="megaphone" size={22} color={Colors.secondaryDark} />
           </View>
           <Text style={styles.actionLabel}>Find Camps</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Profile')}>
-          <View style={[styles.actionIcon, { backgroundColor: '#F1F8E9' }]}>
-            <Ionicons name="medkit" size={24} color="#43A047" />
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Profile')} activeOpacity={0.85}>
+          <View style={[styles.actionIcon, { backgroundColor: Colors.primarySoft }]}>
+            <Ionicons name="medkit" size={22} color={Colors.primary} />
           </View>
           <Text style={styles.actionLabel}>Donate Info</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Notifications')}>
-          <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
-            <Ionicons name="notifications" size={24} color="#FB8C00" />
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Notifications')} activeOpacity={0.85}>
+          <View style={[styles.actionIcon, { backgroundColor: '#FFF1DE' }]}>
+            <Ionicons name="notifications" size={22} color={Colors.warning} />
           </View>
           <Text style={styles.actionLabel}>Alerts</Text>
         </TouchableOpacity>
@@ -129,46 +141,56 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
   },
   nameText: {
     fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   profileBadge: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#fff',
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
+    shadowColor: Colors.text,
+    shadowOpacity: 0.08,
     shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 28,
   },
   statCard: {
     flex: 1,
     marginHorizontal: 4,
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
+  },
+  statIconChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   statValue: {
     fontSize: 20,
     fontWeight: '800',
     color: Colors.text,
-    marginTop: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
+    marginTop: 2,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -177,20 +199,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   seeAll: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 13,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: 30,
+    padding: 32,
   },
   emptyText: {
     color: Colors.textSecondary,
+    marginTop: 8,
   },
   quickActions: {
     flexDirection: 'row',
@@ -201,16 +226,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: Radius.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   actionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.text,
   },
 });

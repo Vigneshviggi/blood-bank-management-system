@@ -18,7 +18,7 @@ const NotificationCard = ({ notification, onPress }) => {
   };
 
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={onPress}>
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
       <GlassCard style={[styles.card, !isRead && styles.unread]}>
         <View style={styles.iconContainer}>
           {getIcon()}
@@ -47,17 +47,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   unread: {
-    backgroundColor: 'rgba(229, 57, 53, 0.05)',
+    backgroundColor: Colors.primarySoft,
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowColor: Colors.text,
+    shadowOpacity: 0.06,
     shadowRadius: 5,
     elevation: 1,
   },
@@ -95,4 +95,3 @@ const styles = StyleSheet.create({
 });
 
 export default NotificationCard;
-

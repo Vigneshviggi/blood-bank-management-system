@@ -36,7 +36,7 @@ const CertificateScreen = ({ route }) => {
         <GlassCard style={styles.certificate}>
           <View style={styles.badgeContainer}>
             <View style={styles.badgeBg}>
-              <Award size={48} color="#FFD700" />
+              <Award size={48} color="#DC7609" />
             </View>
           </View>
           
@@ -115,11 +115,11 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFFBE6',
+    backgroundColor: '#FFF6E5',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFD700',
+    borderColor: '#DC7609',
   },
   certTitle: {
     fontSize: 28,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   line: {
     width: '80%',
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: '#A79FA8',
     marginBottom: 20,
   },
   certBody: {

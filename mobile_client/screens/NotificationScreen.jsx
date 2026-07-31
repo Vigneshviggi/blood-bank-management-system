@@ -1,27 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNotifications } from '../context/NotificationContext';
 import ScreenContainer from '../components/ScreenContainer';
-import { Colors } from '../constants/Theme';
-import { Info, Search, Droplet, Megaphone, CheckCircle } from 'lucide-react-native';
+import { Colors, Radius, Shadows } from '../constants/Theme';
+import { ChevronLeft, Search, Droplet, Megaphone, CheckCircle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import EmptyStateView from '../components/EmptyStateView';
 
 const NotificationScreen = () => {
   const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
 
-  // Mock data for demo if notifications from backend is empty
-  const dummyNotifications = [
-    { _id: '1', type: 'blood_request', title: 'New O+ request at Saveetha Hospital', time: '2 mins ago', read: false },
-    { _id: '2', type: 'camp_update', title: 'Camp registration confirmed for tomorrow', time: '1 hour ago', read: true },
-    { _id: '3', type: 'system', title: 'Your profile has been verified successfully', time: 'Yesterday', read: true },
-  ];
-
-  const displayList = notifications.length > 0 ? notifications : dummyNotifications;
+  const displayList = notifications || [];
 
   const getIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'blood_request': return <Droplet size={16} color="#fff" />;
       case 'camp_update': return <Megaphone size={16} color="#fff" />;
       default: return <CheckCircle size={16} color="#fff" />;
@@ -29,15 +23,15 @@ const NotificationScreen = () => {
   };
 
   const getIconBg = (type) => {
-    switch(type) {
+    switch (type) {
       case 'blood_request': return Colors.primary;
       case 'camp_update': return Colors.accent;
-      default: return '#4CAF50';
+      default: return Colors.secondary;
     }
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={[styles.notificationCard, !item.read && styles.unreadCard]}>
+    <TouchableOpacity style={[styles.notificationCard, !item.read && styles.unreadCard]} activeOpacity={0.85}>
       <View style={[styles.iconCircle, { backgroundColor: getIconBg(item.type) }]}>
         {getIcon(item.type)}
       </View>
@@ -55,7 +49,7 @@ const NotificationScreen = () => {
     <ScreenContainer scrollable={false} style={{ paddingHorizontal: 0 }}>
       <View style={styles.topNav}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-          <Info size={24} color={Colors.text} style={{transform: [{rotate: '180deg'}]}} />
+          <ChevronLeft size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.navTitle}>Alerts</Text>
         <TouchableOpacity style={styles.searchBtn}>
@@ -69,6 +63,9 @@ const NotificationScreen = () => {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <EmptyStateView title="No notifications" message="You're all caught up. Check back later for updates." />
+        )}
       />
     </ScreenContainer>
   );
@@ -81,13 +78,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: Colors.border,
+  },
+  backBtn: {
+    padding: 4,
   },
   navTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
     color: Colors.text,
   },
   searchBtn: {
@@ -100,24 +100,22 @@ const styles = StyleSheet.create({
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: Radius.md,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#eee',
+    ...Shadows.soft,
   },
   unreadCard: {
-    backgroundColor: '#FFF5F5',
-    borderColor: '#FFE0E0',
+    backgroundColor: Colors.primarySoft,
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 14,
   },
   cardContent: {
     flex: 1,
@@ -127,7 +125,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text,
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   cardTime: {
     fontSize: 12,

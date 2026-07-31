@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
-import { Colors } from '../constants/Theme';
+import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 import api from '../services/api';
 import { Users, Hospital, Activity, ShieldCheck, AlertCircle, BarChart3 } from 'lucide-react-native';
 import Badge from '../components/ui/Badge';
@@ -24,22 +24,15 @@ const AdminDashboard = ({ navigation }) => {
 
   const fetchAdminStats = async () => {
     try {
-      const [usersRes, hospitalsRes, requestsRes] = await Promise.all([
-        api.get('/users'),
-        api.get('/hospitals'),
-        api.get('/requests')
-      ]);
-
-      const hospitals = hospitalsRes.data || [];
-      const users = usersRes.data || [];
-      const requests = requestsRes.data || [];
+      const res = await api.get('/admin/system-stats');
+      const payload = res.data || {};
 
       setStats({
-        totalUsers: users.filter(u => u.role === 'user' || u.role === 'donor').length,
-        totalHospitals: hospitals.length,
-        pendingVerifications: hospitals.filter(h => !h.verified).length,
-        activeRequests: requests.filter(r => r.status === 'Pending').length,
-        totalDonations: 0 // Placeholder
+        totalUsers: payload.totalDonors ?? payload.totalUsers ?? 0,
+        totalHospitals: payload.totalHospitals ?? 0,
+        pendingVerifications: payload.pendingVerifications ?? 0,
+        activeRequests: payload.totalRequests ?? 0,
+        totalDonations: payload.totalDonations ?? 0
       });
     } catch (err) {
       console.error('Error fetching admin stats', err);
@@ -79,12 +72,16 @@ const AdminDashboard = ({ navigation }) => {
 
         <View style={styles.statsGrid}>
           <GlassCard style={styles.statBox}>
-            <Users size={24} color={Colors.accent} />
+            <View style={[styles.statIconChip, { backgroundColor: '#E9F0FE' }]}>
+              <Users size={20} color={Colors.accent} />
+            </View>
             <Text style={styles.statValue}>{stats.totalUsers}</Text>
             <Text style={styles.statLabel}>Donors</Text>
           </GlassCard>
           <GlassCard style={styles.statBox}>
-            <Hospital size={24} color={Colors.primary} />
+            <View style={[styles.statIconChip, { backgroundColor: Colors.primarySoft }]}>
+              <Hospital size={20} color={Colors.primary} />
+            </View>
             <Text style={styles.statValue}>{stats.totalHospitals}</Text>
             <Text style={styles.statLabel}>Hospitals</Text>
           </GlassCard>
@@ -92,12 +89,16 @@ const AdminDashboard = ({ navigation }) => {
 
         <View style={styles.statsGrid}>
           <GlassCard style={styles.statBox}>
-            <Activity size={24} color={Colors.warning} />
+            <View style={[styles.statIconChip, { backgroundColor: '#FFF1DE' }]}>
+              <Activity size={20} color={Colors.warning} />
+            </View>
             <Text style={styles.statValue}>{stats.activeRequests}</Text>
             <Text style={styles.statLabel}>Live Requests</Text>
           </GlassCard>
           <GlassCard style={styles.statBox}>
-            <AlertCircle size={24} color={Colors.error} />
+            <View style={[styles.statIconChip, { backgroundColor: '#FDECEA' }]}>
+              <AlertCircle size={20} color={Colors.error} />
+            </View>
             <Text style={styles.statValue}>{stats.pendingVerifications}</Text>
             <Text style={styles.statLabel}>Pending Verification</Text>
           </GlassCard>
@@ -116,25 +117,25 @@ const AdminDashboard = ({ navigation }) => {
         </View>
 
         <View style={styles.consoleGrid}>
-          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('UsersManagement')}>
-            <Users size={32} color={Colors.primary} />
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('UsersManagement')} activeOpacity={0.85}>
+            <View style={styles.consoleIconChip}><Users size={26} color={Colors.primary} /></View>
             <Text style={styles.consoleText}>User List</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('HospitalsManagement')}>
-            <Hospital size={32} color={Colors.primary} />
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('HospitalsManagement')} activeOpacity={0.85}>
+            <View style={styles.consoleIconChip}><Hospital size={26} color={Colors.primary} /></View>
             <Text style={styles.consoleText}>Hospital List</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('MonitoringScreen')}>
-            <Activity size={32} color={Colors.primary} />
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('MonitoringScreen')} activeOpacity={0.85}>
+            <View style={styles.consoleIconChip}><Activity size={26} color={Colors.primary} /></View>
             <Text style={styles.consoleText}>Live Activity</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('ReportsScreen')}>
-            <BarChart3 size={32} color={Colors.primary} />
+          <TouchableOpacity style={styles.consoleTile} onPress={() => navigation.navigate('ReportsScreen')} activeOpacity={0.85}>
+            <View style={styles.consoleIconChip}><BarChart3 size={26} color={Colors.primary} /></View>
             <Text style={styles.consoleText}>System Reports</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: 120 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
     </ScreenContainer>
   );
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -157,19 +159,21 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   welcomeText: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
+    fontWeight: '600',
   },
   nameText: {
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   subtitle: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 19,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -180,22 +184,29 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 6,
     alignItems: 'center',
-    padding: 20,
+    padding: 18,
+  },
+  statIconChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: Colors.text,
-    marginTop: 10,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textSecondary,
-    marginTop: 4,
+    marginTop: 3,
   },
   heroCard: {
     marginTop: 8,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -211,15 +222,17 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: Colors.textSecondary,
     lineHeight: 20,
+    fontSize: 13,
   },
   sectionHeader: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   consoleGrid: {
     flexDirection: 'row',
@@ -228,18 +241,23 @@ const styles = StyleSheet.create({
   },
   consoleTile: {
     width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
     padding: 22,
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    ...Shadows.soft,
+  },
+  consoleIconChip: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: Colors.primarySoft,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   consoleText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.text,
     marginTop: 12,

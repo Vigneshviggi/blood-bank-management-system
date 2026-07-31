@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
-import { Search, X, User, Activity, MapPin } from 'lucide-react-native';
+import { Search, X, User } from 'lucide-react-native';
 import api from '../services/api';
 import EmptyStateView from '../components/EmptyStateView';
 import Toast from 'react-native-toast-message';
@@ -24,12 +24,11 @@ export default function GlobalSearchScreen({ navigation }) {
     
     setLoading(true);
     try {
-      // Assuming a generic search endpoint exists, otherwise we search users for demonstration
-      // If a global search endpoint is missing in backend, you would make concurrent calls to /users, /camps, /requests
-      const res = await api.get(`/users?search=${text}`);
-      setResults(res.data);
+      const res = await api.get(`/users/search?q=${encodeURIComponent(text)}&filter=donors`);
+      setResults(Array.isArray(res.data?.users) ? res.data.users : []);
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Search failed' });
+      Toast.show({ type: 'error', text1: 'Search failed', text2: error.response?.data?.error || error.message });
+      setResults([]);
     } finally {
       setLoading(false);
     }

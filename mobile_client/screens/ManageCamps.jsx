@@ -11,6 +11,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const ManageCamps = () => {
   const { user } = useContext(AuthContext);
@@ -32,8 +33,12 @@ const ManageCamps = () => {
     bannerImage: null, // this will hold the image object
   });
   const [creating, setCreating] = useState(false);
-
   const [activeTab, setActiveTab] = useState('Upcoming');
+  
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [selectedDateObj, setSelectedDateObj] = useState(new Date());
 
   useEffect(() => {
     fetchMyCamps();
@@ -154,9 +159,46 @@ const ManageCamps = () => {
     );
   };
 
+  const handleDateChange = (event, selected) => {
+    setShowDatePicker(false);
+    if (selected) {
+      setSelectedDateObj(selected);
+      const formatted = `${String(selected.getDate()).padStart(2, '0')}/${String(selected.getMonth() + 1).padStart(2, '0')}/${selected.getFullYear()}`;
+      setFormData({ ...formData, date: formatted });
+    }
+  };
+
+  const formatTime = (dateObj) => {
+    let hours = dateObj.getHours();
+    let minutes = dateObj.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    return hours + ':' + minutes + ' ' + ampm;
+  };
+
+  const handleStartTimeChange = (event, selected) => {
+    setShowStartTimePicker(false);
+    if (selected) {
+      setFormData({ ...formData, startTime: formatTime(selected) });
+    }
+  };
+
+  const handleEndTimeChange = (event, selected) => {
+    setShowEndTimePicker(false);
+    if (selected) {
+      setFormData({ ...formData, endTime: formatTime(selected) });
+    }
+  };
+
   const renderCampCard = ({ item }) => {
     return (
-      <View style={styles.campCard}>
+      <TouchableOpacity 
+        style={styles.campCard}
+        onPress={() => navigation.navigate('CampAttendees', { camp: item })}
+        activeOpacity={0.7}
+      >
         <View style={styles.cardHeader}>
           <Text style={styles.campTitle}>{item.title}</Text>
         </View>
@@ -182,7 +224,7 @@ const ManageCamps = () => {
             <Text style={styles.statusText}>{item.status || 'Upcoming'}</Text>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -255,23 +297,65 @@ const ManageCamps = () => {
             <View style={styles.row}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={styles.label}>Date</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="DD/MM/YYYY"
-                  value={formData.date}
-                  onChangeText={(val) => setFormData({...formData, date: val})}
-                />
+                <TouchableOpacity 
+                  style={[styles.input, { justifyContent: 'center' }]} 
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={formData.date ? Colors.text : { color: '#999' }}>
+                    {formData.date || 'DD/MM/YYYY'}
+                  </Text>
+                </TouchableOpacity>
               </View>
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={styles.label}>Time</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="10:00 AM - 04:00 PM"
-                  value={formData.startTime}
-                  onChangeText={(val) => setFormData({...formData, startTime: val})}
-                />
+                <Text style={styles.label}>Start Time</Text>
+                <TouchableOpacity 
+                  style={[styles.input, { justifyContent: 'center' }]} 
+                  onPress={() => setShowStartTimePicker(true)}
+                >
+                  <Text style={formData.startTime ? Colors.text : { color: '#999' }}>
+                    {formData.startTime || '10:00 AM'}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={styles.label}>End Time</Text>
+                <TouchableOpacity 
+                  style={[styles.input, { justifyContent: 'center' }]} 
+                  onPress={() => setShowEndTimePicker(true)}
+                >
+                  <Text style={formData.endTime ? Colors.text : { color: '#999' }}>
+                    {formData.endTime || '04:00 PM'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1, marginLeft: 8 }} />
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={selectedDateObj}
+                mode="date"
+                onChange={handleDateChange}
+                minimumDate={new Date()}
+              />
+            )}
+            {showStartTimePicker && (
+              <DateTimePicker
+                value={selectedDateObj}
+                mode="time"
+                onChange={handleStartTimeChange}
+              />
+            )}
+            {showEndTimePicker && (
+              <DateTimePicker
+                value={selectedDateObj}
+                mode="time"
+                onChange={handleEndTimeChange}
+              />
+            )}
 
             <Text style={styles.label}>Venue</Text>
             <TextInput
@@ -360,7 +444,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0E4E4',
     paddingBottom: 12,
   },
   tabBtn: {
@@ -369,7 +453,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     marginRight: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
   },
   activeTabBtn: {
     backgroundColor: Colors.primary,
@@ -392,7 +476,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -422,7 +506,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f5',
+    borderTopColor: '#F4EEEC',
     paddingTop: 12,
   },
   statLabel: {
@@ -436,7 +520,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   statusPill: {
-    backgroundColor: '#EEF4FF',
+    backgroundColor: '#E9F0FE',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -462,7 +546,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0E4E4',
   },
   modalContent: {
     padding: 20,
@@ -475,7 +559,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -500,7 +584,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 40,
     borderRadius: 4,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4EEEC',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,

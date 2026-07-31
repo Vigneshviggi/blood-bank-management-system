@@ -1,21 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Colors } from '../constants/Theme';
 
 const StatusIndicator = ({ status }) => {
-  let color = '#bdbdbd';
+  let color = Colors.textMuted;
   let label = 'Pending';
   if (status === 'accepted') {
-    color = '#43a047';
+    color = Colors.success;
     label = 'Accepted';
   } else if (status === 'rejected') {
-    color = '#e53935';
+    color = Colors.error;
     label = 'Rejected';
   } else if (status === 'completed') {
-    color = '#1976d2';
+    color = Colors.accent;
     label = 'Completed';
   }
   return (
-    <View style={[styles.indicator, { backgroundColor: color }]}> 
+    <View style={[styles.indicator, { backgroundColor: color }]}>
       <Text style={styles.text}>{label}</Text>
     </View>
   );
@@ -23,15 +24,15 @@ const StatusIndicator = ({ status }) => {
 
 const styles = StyleSheet.create({
   indicator: {
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     alignItems: 'center',
   },
   text: {
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 12,
+    fontWeight: '800',
+    fontSize: 11,
   },
 });
 

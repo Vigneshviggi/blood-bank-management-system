@@ -96,7 +96,7 @@ const SOSScreen = () => {
       </TouchableOpacity>
       
       <View style={styles.content}>
-        <AlertTriangle size={64} color="#ff3b30" style={{ marginBottom: 20 }} />
+        <AlertTriangle size={64} color="#D92D20" style={{ marginBottom: 20 }} />
         <Text style={styles.title}>EMERGENCY SOS</Text>
         <Text style={styles.subtitle}>
           Press the button below to instantly alert all nearby donors and blood banks.
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#aaa',
+    color: '#A79FA8',
     textAlign: 'center',
     marginBottom: 50,
     lineHeight: 24,
@@ -149,11 +149,11 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: '#ff3b30',
+    backgroundColor: '#D92D20',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 20,
-    shadowColor: '#ff3b30',
+    shadowColor: '#D92D20',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   warning: {
     marginTop: 50,
-    color: '#ff3b30',
+    color: '#D92D20',
     fontSize: 12,
     textAlign: 'center',
     opacity: 0.8,

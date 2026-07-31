@@ -7,7 +7,7 @@ const LoadingSkeleton = ({ height = 20, width = '100%', borderRadius = 8, style 
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#ececec',
+    backgroundColor: '#F0E4E4',
     marginBottom: 10,
     opacity: 0.7,
   },

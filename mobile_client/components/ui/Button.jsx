@@ -2,27 +2,31 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Colors, Radius, Shadows, Typography } from '../../constants/Theme';
 
-const Button = ({ title, onPress, loading, variant = 'primary', style }) => {
+// variant: 'primary' | 'secondary' | 'outline' | 'ghost'
+const Button = ({ title, onPress, loading, variant = 'primary', disabled, style }) => {
   const isSecondary = variant === 'secondary';
   const isOutline = variant === 'outline';
+  const isGhost = variant === 'ghost';
+  const isMuted = isOutline || isGhost;
 
   return (
     <TouchableOpacity
+      activeOpacity={0.85}
       style={[
         styles.button,
         isSecondary && styles.secondary,
         isOutline && styles.outline,
-        style
+        isGhost && styles.ghost,
+        (disabled || loading) && styles.disabled,
+        style,
       ]}
       onPress={onPress}
-      disabled={loading}
+      disabled={loading || disabled}
     >
       {loading ? (
-        <ActivityIndicator color={isOutline ? Colors.primary : '#fff'} />
+        <ActivityIndicator color={isMuted ? Colors.primary : '#fff'} />
       ) : (
-        <Text style={[styles.text, (isOutline || isSecondary) && styles.textOutline]}>
-          {title}
-        </Text>
+        <Text style={[styles.text, isMuted && styles.textMuted]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
@@ -36,8 +40,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    paddingHorizontal: 18,
-    ...Shadows.medium,
+    paddingHorizontal: 20,
+    ...Shadows.glow,
   },
   secondary: {
     backgroundColor: Colors.secondary,
@@ -45,8 +49,18 @@ const styles = StyleSheet.create({
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: Colors.primary,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  ghost: {
+    backgroundColor: Colors.primarySoft,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  disabled: {
+    opacity: 0.55,
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -57,7 +71,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     fontFamily: Typography.heading,
   },
-  textOutline: {
+  textMuted: {
     color: Colors.primary,
   },
 });

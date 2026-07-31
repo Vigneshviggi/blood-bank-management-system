@@ -4,23 +4,27 @@ import { Colors } from '../../constants/Theme';
 
 const variants = {
   primary: {
-    backgroundColor: 'rgba(217, 45, 32, 0.12)',
+    backgroundColor: Colors.primarySoft,
     color: Colors.primary,
   },
+  secondary: {
+    backgroundColor: Colors.secondarySoft,
+    color: Colors.secondaryDark,
+  },
   success: {
-    backgroundColor: 'rgba(3, 152, 85, 0.12)',
+    backgroundColor: 'rgba(14, 159, 110, 0.12)',
     color: Colors.success,
   },
   warning: {
-    backgroundColor: 'rgba(220, 104, 3, 0.12)',
+    backgroundColor: 'rgba(220, 118, 9, 0.12)',
     color: Colors.warning,
   },
   info: {
-    backgroundColor: 'rgba(46, 144, 250, 0.12)',
+    backgroundColor: 'rgba(45, 108, 223, 0.12)',
     color: Colors.info,
   },
   neutral: {
-    backgroundColor: 'rgba(102, 112, 133, 0.12)',
+    backgroundColor: 'rgba(110, 103, 113, 0.10)',
     color: Colors.textSecondary,
   },
 };
@@ -37,7 +41,7 @@ const Badge = ({ label, variant = 'neutral', style, textStyle }) => {
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
     paddingVertical: 6,
     borderRadius: 999,
     alignSelf: 'flex-start',

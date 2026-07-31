@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#E0D3D3',
     marginRight: 8,
   },
   activeDot: {

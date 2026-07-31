@@ -9,7 +9,11 @@ const icons = {
   Map: 'map',
   Camps: 'calendar',
   Notifications: 'notifications',
+  Users: 'people',
+  Hospitals: 'medical',
+  Analytics: 'stats-chart',
   Profile: 'person',
+  Inventory: 'medkit',
 };
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {

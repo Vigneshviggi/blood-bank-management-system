@@ -47,19 +47,33 @@ api.interceptors.response.use(
       Toast.show({
         type: 'error',
         text1: 'Network Offline',
-        text2: 'Will retry when connection returns.',
+        text2: 'Retrying automatically when connection returns.',
       });
-      
-      // Simple exponential backoff retry (e.g. wait 5 seconds then retry once)
-      return new Promise((resolve) => {
+
+      return new Promise((resolve, reject) => {
         setTimeout(() => {
-          resolve(api(originalRequest));
+          api(originalRequest).then(resolve).catch(reject);
         }, 5000);
       });
     }
 
+    const duration = originalRequest?.metadata ? new Date() - originalRequest.metadata.startTime : 0;
+    const requestPayload = originalRequest?.data ? originalRequest.data : null;
+    const responsePayload = error.response?.data || null;
+
+    console.error('[API Error]', {
+      endpoint: originalRequest?.url,
+      method: originalRequest?.method,
+      statusCode: error.response?.status,
+      message: error.message,
+      requestPayload,
+      responsePayload,
+      duration,
+    });
+
     if (error.response && error.response.status === 401) {
-      // Handle unauthorized
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
     }
     return Promise.reject(error);
   }

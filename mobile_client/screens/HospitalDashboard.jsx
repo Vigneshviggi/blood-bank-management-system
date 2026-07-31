@@ -3,10 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { AuthContext } from '../context/AuthContext';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
-import { Colors } from '../constants/Theme';
+import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 import api from '../services/api';
-import { Beaker, Megaphone, PlusCircle, Activity, ChevronRight, AlertTriangle } from 'lucide-react-native';
-import Badge from '../components/ui/Badge';
+import { Beaker, Megaphone, PlusCircle, Activity, AlertTriangle } from 'lucide-react-native';
 
 const HospitalDashboard = ({ navigation }) => {
   const { user } = useContext(AuthContext);
@@ -25,17 +24,14 @@ const HospitalDashboard = ({ navigation }) => {
 
   const fetchDashboardData = async () => {
     try {
-      const [hospRes, requestsRes, campsRes] = await Promise.all([
-        api.get('/hospitals/profile/me'),
-        api.get(`/requests?requesterId=${user._id || user.id}`),
-        api.get(`/camps/organized-by/${user._id || user.id}`)
-      ]);
+      const res = await api.get('/hospitals/dashboard/stats');
+      const payload = res.data || {};
 
       setData({
-        inventory: hospRes.data.stock || {},
-        activeRequests: requestsRes.data.filter(r => r.status === 'Pending').length,
-        upcomingCamps: campsRes.data.length,
-        totalDonations: 0 // Assume this is calculated elsewhere
+        inventory: payload.availabilitySummary || {},
+        activeRequests: payload.activeRequests ?? 0,
+        upcomingCamps: payload.upcomingCamps ?? 0,
+        totalDonations: payload.fulfilledRequests ?? 0
       });
     } catch (err) {
       console.error('Error fetching dashboard data', err);
@@ -86,7 +82,8 @@ const HospitalDashboard = ({ navigation }) => {
     <ScreenContainer scrollable={false}>
       <View style={styles.topNav}>
         <View style={styles.logoRow}>
-          <Text style={styles.logoText}>{user?.name?.toLowerCase() || 'saveetha'} <View style={styles.verifiedDot} /></Text>
+          <Text style={styles.logoText}>{user?.name?.toLowerCase() || 'saveetha'}</Text>
+          <View style={styles.verifiedDot} />
         </View>
         <View style={styles.rightNav}>
           <View style={styles.rolePill}><Text style={styles.roleText}>Hospital</Text></View>
@@ -106,13 +103,17 @@ const HospitalDashboard = ({ navigation }) => {
         </View>
 
         <View style={styles.statsRow}>
-          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('BloodRequests')}>
-            <Activity size={28} color={Colors.primary} style={{marginBottom: 8}} />
+          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('BloodRequests')} activeOpacity={0.85}>
+            <View style={[styles.statIconChip, { backgroundColor: Colors.primarySoft }]}>
+              <Activity size={22} color={Colors.primary} />
+            </View>
             <Text style={styles.statValue}>{data.activeRequests}</Text>
             <Text style={styles.statLabel}>Active Requests</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Camps')}>
-            <Megaphone size={28} color={Colors.accent} style={{marginBottom: 8}} />
+          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Camps')} activeOpacity={0.85}>
+            <View style={[styles.statIconChip, { backgroundColor: '#E9F0FE' }]}>
+              <Megaphone size={22} color={Colors.accent} />
+            </View>
             <Text style={styles.statValue}>{data.upcomingCamps}</Text>
             <Text style={styles.statLabel}>My Camps</Text>
           </TouchableOpacity>
@@ -133,24 +134,24 @@ const HospitalDashboard = ({ navigation }) => {
         </View>
 
         <View style={styles.actionGrid}>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('CreateRequest')}>
-            <PlusCircle size={24} color={Colors.primary} />
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('CreateRequest')} activeOpacity={0.85}>
+            <View style={styles.actionIconChip}><PlusCircle size={22} color={Colors.primary} /></View>
             <Text style={styles.actionText}>New Request</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Inventory')}>
-            <Beaker size={24} color={Colors.primary} />
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Inventory')} activeOpacity={0.85}>
+            <View style={styles.actionIconChip}><Beaker size={22} color={Colors.primary} /></View>
             <Text style={styles.actionText}>Update Stock</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Camps')}>
-            <Megaphone size={24} color={Colors.primary} />
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Camps')} activeOpacity={0.85}>
+            <View style={styles.actionIconChip}><Megaphone size={22} color={Colors.primary} /></View>
             <Text style={styles.actionText}>Organize Camp</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('BloodRequests')}>
-            <Activity size={24} color={Colors.textSecondary} />
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('BloodRequests')} activeOpacity={0.85}>
+            <View style={styles.actionIconChip}><Activity size={22} color={Colors.textSecondary} /></View>
             <Text style={styles.actionText}>View Requests</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Analytics')}>
-            <Activity size={24} color={Colors.textSecondary} />
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Analytics')} activeOpacity={0.85}>
+            <View style={styles.actionIconChip}><Activity size={22} color={Colors.textSecondary} /></View>
             <Text style={styles.actionText}>Analytics</Text>
           </TouchableOpacity>
         </View>
@@ -162,31 +163,39 @@ const HospitalDashboard = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+  },
   topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logoText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
+    textTransform: 'capitalize',
   },
   verifiedDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#4CAF50',
-    marginLeft: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.success,
+    marginLeft: 6,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: Colors.surface,
   },
   rightNav: {
     flexDirection: 'row',
@@ -195,14 +204,14 @@ const styles = StyleSheet.create({
   },
   rolePill: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: Colors.border,
     paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
   roleText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.text,
   },
   bellBtn: {
@@ -210,6 +219,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
+    marginTop: 16,
     marginBottom: 20,
   },
   subtitle: {
@@ -225,37 +235,38 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
     marginHorizontal: 4,
     alignItems: 'center',
     paddingVertical: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    borderRadius: Radius.lg,
+    ...Shadows.soft,
+  },
+  statIconChip: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     color: Colors.text,
   },
   statLabel: {
     fontSize: 12,
     color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
     marginTop: 4,
   },
   alertCard: {
     marginHorizontal: 20,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: Colors.primarySoft,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: Radius.md,
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#FFE0E0',
   },
   alertHeader: {
     flexDirection: 'row',
@@ -264,22 +275,19 @@ const styles = StyleSheet.create({
   },
   alertTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.primary,
   },
   alertText: {
     marginTop: 6,
-    color: '#666',
+    color: Colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
   },
   inventoryCard: {
     marginHorizontal: 20,
     marginBottom: 24,
-    padding: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    elevation: 0,
+    padding: 20,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -289,13 +297,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.text,
   },
   viewMore: {
     color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
   },
   inventoryGrid: {
     flexDirection: 'row',
@@ -308,13 +316,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   groupLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.textSecondary,
     marginBottom: 4,
   },
   groupValue: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '800',
     color: Colors.primary,
   },
@@ -323,27 +331,37 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
+    justifyContent: 'space-between',
   },
   actionTile: {
     width: '18%',
     alignItems: 'center',
-    marginHorizontal: '1%',
     marginBottom: 16,
+  },
+  actionIconChip: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.soft,
   },
   actionText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',

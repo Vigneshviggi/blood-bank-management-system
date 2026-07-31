@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import { Animated, StyleSheet } from 'react-native';
+import { Colors } from '../constants/Theme';
 
 export default function SkeletonCard({ width = '100%', height = 100, style }) {
-  const { isDarkMode } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -28,7 +27,7 @@ export default function SkeletonCard({ width = '100%', height = 100, style }) {
     outputRange: [0.3, 0.7]
   });
 
-  const backgroundColor = isDarkMode ? '#333333' : '#E5E7EB';
+  const backgroundColor = Colors.border;
 
   return (
     <Animated.View
@@ -38,7 +37,6 @@ export default function SkeletonCard({ width = '100%', height = 100, style }) {
         style
       ]}
     />
-  );
 }
 
 const styles = StyleSheet.create({

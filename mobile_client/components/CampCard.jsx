@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Colors } from '../constants/Theme';
+import { Colors, Radius, Shadows } from '../constants/Theme';
 import { MapPin, Calendar, Users, Info, Building2, Clock, Bookmark, Navigation, UserPlus } from 'lucide-react-native';
 
 const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer = false }) => {
@@ -16,7 +16,7 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
 
   return (
     <View style={styles.card}>
-      {/* LEFT Banners Image */}
+      {/* LEFT Banner Image */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: bannerUri }} style={styles.banner} resizeMode="cover" />
         <View style={[styles.statusBadge, isLive ? styles.statusLive : styles.statusUpcoming]}>
@@ -26,15 +26,13 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
 
       {/* RIGHT Content */}
       <View style={styles.content}>
-        {/* Title & Bookmark */}
         <View style={styles.titleRow}>
           <Text style={styles.title} numberOfLines={1}>{camp.title}</Text>
           <TouchableOpacity style={styles.bookmarkBtn}>
-            <Bookmark size={20} color={Colors.textSecondary} />
+            <Bookmark size={20} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* Info Rows */}
         <View style={styles.infoRow}>
           <Building2 size={14} color={Colors.textSecondary} />
           <Text style={styles.infoText} numberOfLines={1}>{camp.organizerName || 'LifeCare Hospitals'}</Text>
@@ -43,9 +41,9 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
         <View style={styles.infoRow}>
           <Calendar size={14} color={Colors.textSecondary} />
           <Text style={styles.infoText}>{new Date(camp.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-          
+
           <View style={styles.timeSpacer} />
-          
+
           <Clock size={14} color={Colors.textSecondary} />
           <Text style={styles.infoText}>{defaultStartTime} - {defaultEndTime}</Text>
         </View>
@@ -55,12 +53,11 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
           <Text style={styles.infoText} numberOfLines={1}>{camp.location}</Text>
         </View>
 
-        {/* Progress Section */}
         <View style={styles.progressSection}>
           <View style={styles.progressHeader}>
             <View style={styles.progressTextRow}>
               <Users size={14} color={Colors.textSecondary} />
-              <Text style={styles.progressText}><Text style={{fontWeight: '700'}}>{registered}</Text> / {capacity || '∞'} Registered</Text>
+              <Text style={styles.progressText}><Text style={{ fontWeight: '700' }}>{registered}</Text> / {capacity || '∞'} Registered</Text>
             </View>
             <Text style={styles.percentageText}>{occupancy}%</Text>
           </View>
@@ -69,27 +66,27 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
           </View>
         </View>
 
-        {/* Actions Section */}
         <View style={styles.actionsRow}>
           {onRegister && (
-            <TouchableOpacity 
-              style={[styles.actionBtnPrimary, isRegistered && { backgroundColor: '#E0F2F1' }]} 
+            <TouchableOpacity
+              style={[styles.actionBtnPrimary, isRegistered && styles.actionBtnRegistered]}
               onPress={!isRegistered ? onRegister : undefined}
               disabled={isRegistered}
+              activeOpacity={0.85}
             >
-              <UserPlus size={14} color={isRegistered ? '#00897B' : Colors.primary} />
-              <Text style={[styles.actionTextPrimary, isRegistered && { color: '#00897B' }]}>
+              <UserPlus size={14} color={isRegistered ? Colors.secondaryDark : Colors.primary} />
+              <Text style={[styles.actionTextPrimary, isRegistered && { color: Colors.secondaryDark }]}>
                 {isRegistered ? 'Registered' : 'Register'}
               </Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => {}}>
+          <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => {}} activeOpacity={0.85}>
             <Navigation size={14} color={Colors.text} />
             <Text style={styles.actionTextSecondary}>Navigate</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionBtnSecondary} onPress={onPress}>
+          <TouchableOpacity style={styles.actionBtnSecondary} onPress={onPress} activeOpacity={0.85}>
             <Info size={14} color={Colors.text} />
             <Text style={styles.actionTextSecondary}>Details</Text>
           </TouchableOpacity>
@@ -102,22 +99,18 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
     padding: 10,
     marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    ...Shadows.soft,
   },
   imageContainer: {
     width: 110,
-    borderRadius: 12,
+    borderRadius: Radius.sm,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.backgroundAlt,
   },
   banner: {
     width: '100%',
@@ -129,13 +122,13 @@ const styles = StyleSheet.create({
     left: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   statusLive: {
-    backgroundColor: '#4CAF50', // Green
+    backgroundColor: Colors.success,
   },
   statusUpcoming: {
-    backgroundColor: '#FFA726', // Orange
+    backgroundColor: Colors.warning,
   },
   statusText: {
     color: '#fff',
@@ -145,7 +138,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 14,
     paddingVertical: 2,
   },
   titleRow: {
@@ -203,13 +196,13 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#FFEBEE',
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.primarySoft,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
     backgroundColor: Colors.primary,
   },
   actionsRow: {
@@ -219,13 +212,16 @@ const styles = StyleSheet.create({
   actionBtnPrimary: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#FFEBEE',
-    paddingVertical: 8,
+    backgroundColor: Colors.primarySoft,
+    paddingVertical: 9,
     paddingHorizontal: 6,
-    borderRadius: 8,
+    borderRadius: Radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
+  },
+  actionBtnRegistered: {
+    backgroundColor: Colors.secondarySoft,
   },
   actionTextPrimary: {
     color: Colors.primary,
@@ -235,12 +231,12 @@ const styles = StyleSheet.create({
   actionBtnSecondary: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: '#eee',
-    paddingVertical: 8,
+    borderColor: Colors.border,
+    paddingVertical: 9,
     paddingHorizontal: 6,
-    borderRadius: 8,
+    borderRadius: Radius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,

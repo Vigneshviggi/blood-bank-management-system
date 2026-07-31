@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   respondBtn: {
-    backgroundColor: '#e53935',
+    backgroundColor: '#C81E4A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   routeBtn: {
-    backgroundColor: '#e53935',
+    backgroundColor: '#C81E4A',
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: 'center',

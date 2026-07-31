@@ -42,7 +42,7 @@ export default function SuccessModal({ visible, onFinish }) {
       <View style={styles.overlay}>
         <Animated.View style={[styles.card, animatedStyle]}>
           <View style={styles.iconContainer}>
-            <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
+            <Ionicons name="checkmark-circle" size={80} color="#0E9F6E" />
           </View>
           <Text style={styles.title}>Success!</Text>
           <Text style={styles.subtitle}>
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#1D1B20',
     padding: 30,
     borderRadius: 24,
     width: '80%',
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#1D1B20',
   },
   iconContainer: {
     marginBottom: 20,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   subtitle: {
-    color: '#AAA',
+    color: '#A79FA8',
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 24,

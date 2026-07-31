@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import GlassCard from './ui/GlassCard';
-import { Colors } from '../constants/Theme';
-import { MapPin, Droplets, Clock, ChevronRight, Activity } from 'lucide-react-native';
+import { Colors, Radius } from '../constants/Theme';
+import { MapPin, Clock, ChevronRight } from 'lucide-react-native';
 import EmergencyBadge from './EmergencyBadge';
 import Badge from './ui/Badge';
 
@@ -39,7 +39,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
             <View style={[styles.bloodCircle, isUrgent && styles.urgentBlood]}>
-              <Text style={styles.bloodText}>{bloodGroup}</Text>
+              <Text style={[styles.bloodText, isUrgent && { color: Colors.primary }]}>{bloodGroup}</Text>
             </View>
             <Text style={styles.detailLabel}>Group</Text>
           </View>
@@ -71,11 +71,11 @@ const RequestCard = ({ request, onPress, onRespond }) => {
             <Badge label={statusLabel} variant={statusVariant} style={styles.statusBadge} />
           </View>
           {onRespond ? (
-            <TouchableOpacity style={styles.respondBtn} onPress={onRespond}>
+            <TouchableOpacity style={styles.respondBtn} onPress={onRespond} activeOpacity={0.85}>
               <Text style={styles.respondText}>Respond</Text>
             </TouchableOpacity>
           ) : (
-            <ChevronRight size={20} color={Colors.textSecondary} />
+            <ChevronRight size={20} color={Colors.textMuted} />
           )}
         </View>
       </GlassCard>
@@ -85,7 +85,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
+    padding: 18,
     marginBottom: 16,
   },
   urgentCard: {
@@ -122,8 +122,8 @@ const styles = StyleSheet.create({
   detailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(217, 45, 32, 0.04)',
-    borderRadius: 16,
+    backgroundColor: Colors.primarySoft,
+    borderRadius: Radius.md,
     padding: 12,
     marginBottom: 16,
   },
@@ -139,18 +139,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowColor: Colors.text,
+    shadowOpacity: 0.06,
     shadowRadius: 5,
     elevation: 1,
   },
   urgentBlood: {
-    backgroundColor: 'rgba(229, 57, 53, 0.1)',
+    backgroundColor: '#fff',
   },
   bloodText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
-    color: Colors.primary,
+    color: Colors.text,
   },
   detailValue: {
     fontSize: 15,
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 30,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   footer: {
     flexDirection: 'row',
@@ -198,16 +198,15 @@ const styles = StyleSheet.create({
   },
   respondBtn: {
     backgroundColor: Colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: Radius.sm,
   },
   respondText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 13,
   },
 });
 
 export default RequestCard;
-

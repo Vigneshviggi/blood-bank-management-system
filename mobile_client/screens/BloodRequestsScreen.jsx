@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0E4E4',
     paddingBottom: 12,
   },
   tabBtn: {
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
   },
   activeTabBtn: {
     backgroundColor: Colors.primary,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -211,12 +211,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   priorityBadge: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FDE7ED',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#FFE0E0',
+    borderColor: '#FDE7ED',
   },
   priorityText: {
     fontSize: 12,
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   rejectBtn: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',

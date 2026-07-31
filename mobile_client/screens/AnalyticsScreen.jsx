@@ -14,27 +14,35 @@ const AnalyticsScreen = () => {
 
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('Monthly');
+  const [trendData, setTrendData] = useState([]);
+  const [bloodGroupDemand, setBloodGroupDemand] = useState([]);
 
-  // We'll use the existing logic for total requests but style it according to the reference
   const fetchStats = async () => {
     try {
-      const [requestsRes] = await Promise.all([
-        api.get('/requests')
+      const [trendsRes, demandRes] = await Promise.all([
+        api.get('/analytics/trends/monthly'),
+        api.get('/analytics/demand/blood-groups')
       ]);
 
-      const requests = requestsRes.data || [];
+      const trends = trendsRes.data?.data || [];
+      const demand = demandRes.data?.data || [];
+      const totalDonations = trends.reduce((sum, item) => sum + (item.value ?? 0), 0);
+      const livesSaved = totalDonations * 3;
 
       setStats({
-        totalDonations: requests.length > 0 ? requests.length : 1245,
-        livesSaved: requests.length > 0 ? requests.length * 3 : 3735,
+        totalDonations,
+        livesSaved,
       });
+      setTrendData(trends);
+      setBloodGroupDemand(demand);
     } catch (err) {
       console.error('Error fetching analytics:', err);
-      // Fallback stats
       setStats({
-        totalDonations: 1245,
-        livesSaved: 3735,
+        totalDonations: 0,
+        livesSaved: 0,
       });
+      setTrendData([]);
+      setBloodGroupDemand([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -94,7 +102,7 @@ const AnalyticsScreen = () => {
             <Text style={styles.summaryLabel}>Total Donations</Text>
           </View>
           <View style={styles.summaryBox}>
-            <View style={[styles.summaryIconBox, { backgroundColor: '#EEF4FF' }]}><Users size={20} color={Colors.accent} /></View>
+            <View style={[styles.summaryIconBox, { backgroundColor: '#E9F0FE' }]}><Users size={20} color={Colors.accent} /></View>
             <Text style={styles.summaryValue}>{stats.livesSaved}</Text>
             <Text style={styles.summaryLabel}>Lives Saved</Text>
           </View>
@@ -105,57 +113,41 @@ const AnalyticsScreen = () => {
             <Text style={styles.cardTitle}>Donation Trends</Text>
             <BarChart3 size={20} color={Colors.textSecondary} />
           </View>
-          <View style={styles.placeholderChart}>
-            {/* Simple CSS bars for visual effect */}
-            <View style={[styles.bar, { height: '40%' }]} />
-            <View style={[styles.bar, { height: '70%' }]} />
-            <View style={[styles.bar, { height: '50%' }]} />
-            <View style={[styles.bar, { height: '90%' }]} />
-            <View style={[styles.bar, { height: '60%' }]} />
-            <View style={[styles.bar, { height: '80%', backgroundColor: Colors.primary }]} />
-          </View>
-          <View style={styles.chartLabels}>
-            <Text style={styles.chartLabelText}>Jan</Text>
-            <Text style={styles.chartLabelText}>Feb</Text>
-            <Text style={styles.chartLabelText}>Mar</Text>
-            <Text style={styles.chartLabelText}>Apr</Text>
-            <Text style={styles.chartLabelText}>May</Text>
-            <Text style={styles.chartLabelText}>Jun</Text>
-          </View>
-        </View>
-
-        <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Blood Group Distribution</Text>
-          <View style={styles.distributionRow}>
-            <View style={styles.pieChartPlaceholder}>
-              <View style={styles.pieInner} />
-            </View>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
-                <Text style={styles.legendText}>O+ (35%)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors.accent }]} />
-                <Text style={styles.legendText}>A+ (25%)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
-                <Text style={styles.legendText}>B+ (20%)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#FF9800' }]} />
-                <Text style={styles.legendText}>Other (20%)</Text>
-              </View>
+            <View style={styles.trendChart}>
+              {trendData.length === 0 ? (
+                <Text style={styles.emptyChartText}>No trend data available yet.</Text>
+              ) : (
+                trendData.map((item) => (
+                  <View key={item.month} style={styles.chartBarWrapper}>
+                    <View style={[styles.bar, { height: `${Math.max(10, item.value || 0)}%`, backgroundColor: Colors.primary }]} />
+                    <Text style={styles.chartLabelText}>{item.month}</Text>
+                  </View>
+                ))
+              )}
             </View>
           </View>
-        </View>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </ScreenContainer>
-  );
-};
+          <View style={styles.chartCard}>
+            <Text style={styles.cardTitle}>Blood Group Demand</Text>
+            <View style={styles.demandList}>
+              {bloodGroupDemand.length > 0 ? (
+                bloodGroupDemand.map((item) => (
+                  <View key={item._id} style={styles.demandItem}>
+                    <Text style={styles.demandGroup}>{item._id || 'Unknown'}</Text>
+                    <Text style={styles.demandValue}>{item.totalRequests || 0} requests</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyChartText}>Demand data not available yet.</Text>
+              )}
+            </View>
+          </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </ScreenContainer>
+    );
+  };
 
 const styles = StyleSheet.create({
   centered: {
@@ -184,7 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#F0E4E4',
     paddingBottom: 12,
   },
   tabBtn: {
@@ -193,7 +185,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     marginRight: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
   },
   activeTabBtn: {
     backgroundColor: Colors.primary,
@@ -221,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -231,7 +223,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FDE7ED',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -253,7 +245,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#F0E4E4',
     elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -279,7 +271,7 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: 24,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#F0E4E4',
     borderRadius: 4,
   },
   chartLabels: {
@@ -297,42 +289,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
-  pieChartPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#F0F0F0',
-    borderWidth: 16,
-    borderColor: Colors.primary,
-    borderRightColor: Colors.accent,
-    borderBottomColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pieInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#fff',
-  },
-  legendContainer: {
-    marginLeft: 32,
-  },
-  legendItem: {
+  trendChart: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 160,
+    paddingHorizontal: 8,
+  },
+  chartBarWrapper: {
+    flex: 1,
+    marginHorizontal: 4,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+  emptyChartText: {
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
-  legendText: {
-    fontSize: 13,
-    fontWeight: '500',
+  demandList: {
+    marginTop: 16,
+  },
+  demandItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  demandGroup: {
+    fontSize: 14,
+    fontWeight: '700',
     color: Colors.text,
+  },
+  demandValue: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+  },
+  bar: {
+    width: '100%',
+    borderRadius: 8,
+    backgroundColor: '#F0E4E4',
   },
 });
 

@@ -56,6 +56,13 @@ const sendOTPEmail = async (email, otp) => {
       text: `Your LifeLink verification code is: ${otp}. This code expires in 5 minutes.`
     };
 
+    // Check for dummy credentials to prevent timeout hangs in development
+    if (!process.env.EMAIL_USER || process.env.EMAIL_USER.includes('yourgmail')) {
+      console.log("⚠️ Dummy email credentials detected. Skipping actual email send.");
+      console.log(`[MOCK EMAIL SENT] To: ${email}, OTP: ${otp}`);
+      return true;
+    }
+
     const info = await transporter.sendMail(mailOptions);
     console.log("✅ Mail Sent via Gmail:", info.messageId);
     return true;

@@ -14,7 +14,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
   const { camp: initialCamp } = route.params;
   const [camp, setCamp] = useState(initialCamp);
   const [loading, setLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
   const { user } = useContext(AuthContext);
 
   const fetchCamp = async () => {
@@ -26,7 +26,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
       if (user) {
         const regRes = await api.get(`/camps/${camp._id}/registration-status?userId=${user._id}`);
         if (regRes.data) {
-          setRegistered(true);
+          setIsRegistered(true);
         }
       }
     } catch (err) {}
@@ -42,7 +42,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
         bloodGroup: user.bloodGroup || 'A+',
         contactInfo: user.phone || ''
       });
-      setRegistered(true);
+      setIsRegistered(true);
       await fetchCamp();
       Alert.alert('Success', 'Registered for the camp successfully!');
     } catch (err) {
@@ -58,7 +58,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
       await api.post(`/camps/${camp._id}/cancel-registration`, {
         userId: user._id
       });
-      setRegistered(false);
+      setIsRegistered(false);
       await fetchCamp();
       Alert.alert('Success', 'Registration cancelled');
     } catch (err) {
@@ -90,7 +90,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
         <Image source={{ uri: camp.bannerImage }} style={styles.banner} />
         <View style={styles.titleRow}>
           <Text style={styles.title}>{camp.title}</Text>
-          <Badge label={registered ? 'Registered' : 'Open'} variant={registered ? 'success' : 'primary'} />
+          <Badge label={isRegistered ? 'Registered' : 'Open'} variant={isRegistered ? 'success' : 'primary'} />
         </View>
 
         <GlassCard style={styles.summaryCard}>
@@ -152,7 +152,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
           </GlassCard>
         ) : null}
 
-        {registered && (
+        {isRegistered && (
           <GlassCard style={styles.qrCard}>
             <Text style={styles.sectionTitle}>Your Entry Pass</Text>
             <View style={styles.qrContainer}>
@@ -167,7 +167,7 @@ const CampDetailsScreen = ({ route, navigation }) => {
           </GlassCard>
         )}
 
-        {registered ? (
+        {isRegistered ? (
           <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
             <Text style={styles.cancelText}>Cancel Registration</Text>
           </TouchableOpacity>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   registerBtn: {
-    backgroundColor: '#43a047',
+    backgroundColor: '#0E9F6E',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   cancelBtn: {
-    backgroundColor: '#e53935',
+    backgroundColor: '#C81E4A',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',

@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   labelError: {
-    color: '#FF5252',
+    color: '#C81E4A',
   },
   grid: {
     flexDirection: 'row',
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   button: {
     width: '22%',
     marginHorizontal: '1.5%', // 4 items per row, spacing between them
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#1D1B20',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -78,21 +78,21 @@ const styles = StyleSheet.create({
   },
   buttonActive: {
     backgroundColor: 'rgba(229, 57, 53, 0.1)',
-    borderColor: '#E53935',
+    borderColor: '#C81E4A',
   },
   buttonError: {
     borderColor: 'rgba(255, 82, 82, 0.5)',
   },
   text: {
-    color: '#AAA',
+    color: '#A79FA8',
     fontWeight: '700',
     fontSize: 16,
   },
   textActive: {
-    color: '#E53935',
+    color: '#C81E4A',
   },
   errorText: {
-    color: '#FF5252',
+    color: '#C81E4A',
     fontSize: 12,
     marginTop: 4,
     fontWeight: '500',

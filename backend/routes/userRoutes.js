@@ -10,6 +10,7 @@ const { sendOTPEmail } = require('../utils/emailService');
 
 const { verifyToken, authorizeRoles } = require('../middleware/authMiddleware');
 const { logActivity } = require('../middleware/activityLogger');
+const upload = require('../middleware/upload');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretlifelink';
 
@@ -157,6 +158,26 @@ router.put('/:id', verifyToken, logActivity('UPDATE'), async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload profile image
+router.post('/:id/upload-image', verifyToken, upload.single('profileImage'), async (req, res) => {
+  try {
+    if (req.user.id !== req.params.id && !['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Unauthorized to update this profile' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No image uploaded' });
+    }
+
+    const imageUrl = req.file.path;
+    const user = await User.findByIdAndUpdate(req.params.id, { imageUrl }, { new: true }).select('-password');
+    
+    res.json({ success: true, imageUrl, user });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

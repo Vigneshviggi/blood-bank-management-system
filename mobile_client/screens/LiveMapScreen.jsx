@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4EEEC',
     borderRadius: 12,
   },
   title: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   calloutDesc: {
     fontSize: 14,
-    color: '#666',
+    color: '#6E6771',
   },
   actionText: {
     color: Colors.primary,
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontWeight: '600',
-    color: '#333',
+    color: '#1D1B20',
   }
 });
 

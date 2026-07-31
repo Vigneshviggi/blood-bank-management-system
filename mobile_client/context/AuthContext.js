@@ -1,7 +1,37 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { jwtDecode } from 'jwt-decode';
 import api from '../services/api';
+
+const base64UrlDecode = (input) => {
+  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+
+  if (typeof atob === 'function') {
+    return atob(padded);
+  }
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(padded, 'base64').toString('binary');
+  }
+
+  throw new Error('Base64 decoding not supported in this environment.');
+};
+
+const jwtDecode = (token) => {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+
+  const decodedPayload = base64UrlDecode(parts[1]);
+  const payload = decodeURIComponent(
+    decodedPayload
+      .split('')
+      .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+      .join('')
+  );
+
+  return JSON.parse(payload);
+};
 
 export const AuthContext = createContext();
 
@@ -17,13 +47,15 @@ export const AuthProvider = ({ children }) => {
         const decoded = jwtDecode(token);
         // Optional: Check if token is expired
         const currentTime = Date.now() / 1000;
-        if (decoded.exp < currentTime) {
+        if (decoded.exp && decoded.exp < currentTime) {
           await logout();
         } else {
           const profileResponse = await api.get('/users/profile');
           const profile = profileResponse.data?.user;
-          setUser(profile || decoded);
-          setRole(profile?.role || decoded.role);
+          const currentUser = profile || decoded;
+          setUser(currentUser);
+          setRole(currentUser?.role || decoded.role);
+          await AsyncStorage.setItem('user', JSON.stringify(currentUser));
         }
       }
     } catch (err) {
@@ -41,8 +73,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('token', token);
       const decoded = jwtDecode(token);
-      setUser(profile || decoded);
-      setRole(profile?.role || decoded.role);
+      const currentUser = profile || decoded;
+      setUser(currentUser);
+      setRole(currentUser?.role || decoded.role);
+      await AsyncStorage.setItem('user', JSON.stringify(currentUser));
     } catch (err) {
       console.error('Login error', err);
     }

@@ -6,7 +6,8 @@ import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
-import { ChevronLeft, Send, CheckCircle2, ChevronDown, X } from 'lucide-react-native';
+import { ChevronLeft, Send, CheckCircle2, ChevronDown, X, Calendar as CalendarIcon } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 const priorityLevels = ['Normal', 'High', 'Critical'];
@@ -36,6 +37,11 @@ const CreateRequestScreen = ({ navigation }) => {
   const [hospitals, setHospitals] = useState([]);
   const [showHospitalPicker, setShowHospitalPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  
+  // DateTimePicker states
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -79,8 +85,11 @@ const CreateRequestScreen = ({ navigation }) => {
       }));
       Alert.alert('Location captured', 'Current device location has been attached to the request.');
     } catch (err) {
-      console.error('Unable to fetch location', err);
-      Alert.alert('Error', 'Unable to fetch current location.');
+      console.log('Unable to fetch location', err);
+      Alert.alert(
+        'Location Unavailable', 
+        'Please ensure GPS is enabled on your device. You can also manually type your location.'
+      );
     }
   };
 
@@ -137,6 +146,32 @@ const CreateRequestScreen = ({ navigation }) => {
     return h ? h.name : 'Any Available Hospital';
   };
 
+  const handleDateChange = (event, date) => {
+    setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
+      setShowTimePicker(true); // show time picker immediately after date
+    }
+  };
+
+  const handleTimeChange = (event, time) => {
+    setShowTimePicker(false);
+    if (time) {
+      const finalDate = new Date(selectedDate);
+      finalDate.setHours(time.getHours());
+      finalDate.setMinutes(time.getMinutes());
+      setSelectedDate(finalDate);
+      
+      const formatted = finalDate.getFullYear() + '-' +
+        String(finalDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(finalDate.getDate()).padStart(2, '0') + ' ' +
+        String(finalDate.getHours()).padStart(2, '0') + ':' +
+        String(finalDate.getMinutes()).padStart(2, '0');
+        
+      setFormData({ ...formData, requiredBefore: formatted });
+    }
+  };
+
   return (
     <ScreenContainer>
       <View style={styles.header}>
@@ -149,7 +184,7 @@ const CreateRequestScreen = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.scrollContent}>
         
         {/* SCENARIOS */}
         <View style={styles.scenarioGrid}>
@@ -187,12 +222,12 @@ const CreateRequestScreen = ({ navigation }) => {
         </View>
 
         <GlassCard style={styles.card}>
-          <Text style={styles.label}>Patient Name</Text>
+          <Text style={styles.label}>{user?.role === 'hospital' ? 'Hospital Name / Patient Name' : 'Patient Name'}</Text>
           <TextInput
             style={styles.input}
             value={formData.patientName}
             onChangeText={(text) => setFormData({ ...formData, patientName: text })}
-            placeholder="Enter patient or requester name"
+            placeholder={user?.role === 'hospital' ? "Enter hospital or patient name" : "Enter patient name"}
           />
 
           {/* Blood Group */}
@@ -238,8 +273,8 @@ const CreateRequestScreen = ({ navigation }) => {
                 style={[
                   styles.priorityBtn, 
                   formData.emergencyLevel === level && styles.activePriorityBtn,
-                  formData.emergencyLevel === level && level === 'Critical' && {backgroundColor: '#D32F2F'},
-                  formData.emergencyLevel === level && level === 'High' && {backgroundColor: '#FB8C00'}
+                  formData.emergencyLevel === level && level === 'Critical' && {backgroundColor: '#8F1338'},
+                  formData.emergencyLevel === level && level === 'High' && {backgroundColor: '#DC7609'}
                 ]}
                 onPress={() => setFormData({...formData, emergencyLevel: level})}
               >
@@ -273,12 +308,34 @@ const CreateRequestScreen = ({ navigation }) => {
           />
 
           <Text style={styles.label}>Required Before</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.requiredBefore}
-            onChangeText={(text) => setFormData({ ...formData, requiredBefore: text })}
-            placeholder="YYYY-MM-DD HH:mm"
-          />
+          <TouchableOpacity 
+            style={[styles.input, {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={[styles.inputText, !formData.requiredBefore && {color: Colors.textSecondary}]}>
+              {formData.requiredBefore || 'Select Date & Time'}
+            </Text>
+            <CalendarIcon size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              minimumDate={new Date()}
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="time"
+              display="default"
+              onChange={handleTimeChange}
+            />
+          )}
 
           {/* Target Hospital (If applicable) */}
           {scenario.includes('to_hospital') && (
@@ -292,10 +349,10 @@ const CreateRequestScreen = ({ navigation }) => {
           )}
 
           {/* Patient Condition */}
-          <Text style={styles.label}>Patient Condition</Text>
+          <Text style={styles.label}>{user?.role === 'hospital' ? 'Reason / Condition' : 'Patient Condition'}</Text>
           <TextInput 
             style={styles.input}
-            placeholder="e.g. Critical Surgery, Accident"
+            placeholder={user?.role === 'hospital' ? "e.g. Critical Surgery, Stock Shortage" : "e.g. Critical Surgery, Accident"}
             value={formData.patientCondition}
             onChangeText={(val) => setFormData({...formData, patientCondition: val})}
           />
@@ -327,7 +384,7 @@ const CreateRequestScreen = ({ navigation }) => {
             )}
           </TouchableOpacity>
         </GlassCard>
-      </ScrollView>
+      </View>
 
       {/* Hospital Picker Modal */}
       <Modal visible={showHospitalPicker} transparent animationType="slide">
@@ -416,19 +473,19 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: '#f0f0f0',
+    borderColor: '#F0E4E4',
     flexDirection: 'row',
     alignItems: 'center',
   },
   scenarioCardActive: {
     borderColor: Colors.primary,
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FDE7ED',
   },
   scenarioIconBox: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F4EEEC',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -438,7 +495,7 @@ const styles = StyleSheet.create({
   },
   scenarioIcon: {
     fontSize: 18,
-    color: '#888',
+    color: '#6E6771',
     fontWeight: 'bold',
   },
   scenarioIconActive: {
@@ -480,7 +537,7 @@ const styles = StyleSheet.create({
   groupChip: {
     width: '23%',
     paddingVertical: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
     borderRadius: 12,
     alignItems: 'center',
     margin: 4,
@@ -488,7 +545,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   activeChip: {
-    backgroundColor: '#FFF5F5',
+    backgroundColor: '#FDE7ED',
     borderColor: Colors.primary,
   },
   chipText: {
@@ -508,7 +565,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -533,7 +590,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
@@ -551,7 +608,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   input: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
     borderRadius: 14,
     padding: 16,
     fontSize: 15,
@@ -566,7 +623,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F4EEEC',
     borderRadius: 14,
     padding: 16,
   },
@@ -643,7 +700,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F0E4E4',
   },
   modalItemText: {
     fontSize: 16,

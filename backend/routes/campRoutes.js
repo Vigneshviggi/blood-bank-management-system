@@ -56,24 +56,23 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get a single camp by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const camp = await Camp.findById(req.params.id);
-    if (!camp) return res.status(404).json({ success: false, message: 'Camp not found' });
-    res.json(camp);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // Get my registrations
 router.get('/my-registrations', verifyToken, async (req, res) => {
   try {
-    const registrations = await CampRegistration.find({ userId: req.user.id || req.user._id });
-    const campIds = registrations.map(reg => reg.campId);
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+
+    const registrations = await CampRegistration.find({ userId }).select('campId').lean();
+    const campIds = registrations
+      .map((reg) => reg.campId)
+      .filter(Boolean)
+      .map((campId) => campId.toString());
+
     res.json(campIds);
   } catch (error) {
+    console.error('Camp registration fetch error', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -215,6 +214,22 @@ router.patch('/registration/:id', verifyToken, authorizeRoles('admin', 'hospital
     if (io) io.emit('campAttendanceUpdate', registration);
 
     res.json(registration);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get a single camp by ID
+router.get('/:id', async (req, res, next) => {
+  // Prevent catching "my-registrations" if the route ordering gets mixed up
+  if (req.params.id === 'my-registrations') {
+    return next();
+  }
+  
+  try {
+    const camp = await Camp.findById(req.params.id);
+    if (!camp) return res.status(404).json({ success: false, message: 'Camp not found' });
+    res.json(camp);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

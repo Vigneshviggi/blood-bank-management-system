@@ -1,15 +1,15 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
 import ScreenContainer from '../components/ScreenContainer';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import GlassCard from '../components/ui/GlassCard';
-import { Colors } from '../constants/Theme';
+import { Colors, Radius, Typography } from '../constants/Theme';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Fingerprint } from 'lucide-react-native';
+import { Fingerprint, Droplet } from 'lucide-react-native';
 
 let GoogleSignin = null;
 let statusCodes = {};
@@ -32,7 +32,7 @@ const LoginScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  
+
   const { login, googleLogin } = useContext(AuthContext);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ const LoginScreen = ({ navigation }) => {
       setError('Please fill in all fields');
       return;
     }
-    
+
     setLoading(true);
     setError('');
     try {
@@ -69,15 +69,12 @@ const LoginScreen = ({ navigation }) => {
         fallbackLabel: 'Use password',
       });
       if (biometricAuth.success) {
-        // Here we ideally fetch the stored token or user credentials and re-authenticate.
-        // For simplicity, we assume if the token is valid, we just re-hydrate context.
-        // In a real app, you might want to call a /me endpoint to refresh the token/user.
         const token = await AsyncStorage.getItem('token');
         const user = await AsyncStorage.getItem('user');
         if (token && user) {
           await login(token, JSON.parse(user));
         } else {
-          Alert.alert("Error", "Session expired. Please log in with password.");
+          Alert.alert('Error', 'Session expired. Please log in with password.');
         }
       }
     } catch (err) {
@@ -93,14 +90,14 @@ const LoginScreen = ({ navigation }) => {
       );
       return;
     }
-    
+
     setGoogleLoading(true);
     setError('');
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.idToken || userInfo.data?.idToken; // Depends on library version
-      
+
       const result = await googleLogin(idToken);
       if (!result.success) {
         setError(result.error || 'Google login failed');
@@ -122,59 +119,80 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <ScreenContainer scrollable={false}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.content}
       >
         <View style={styles.header}>
-          <Text style={styles.logoText}>Life<Text style={{color: Colors.primary}}>Link</Text></Text>
+          <View style={styles.logoBadge}>
+            <Droplet size={28} color="#fff" fill="#fff" />
+          </View>
+          <Text style={styles.logoText}>Life<Text style={{ color: Colors.primary }}>Link</Text></Text>
           <Text style={styles.subtitle}>Connecting lives, one drop at a time.</Text>
         </View>
 
         <GlassCard style={styles.card}>
-          <Text style={styles.cardTitle}>Welcome Back</Text>
-          <Text style={styles.cardSubtitle}>Sign in to continue</Text>
+          <Text style={styles.cardTitle}>Welcome back</Text>
+          <Text style={styles.cardSubtitle}>Sign in to continue saving lives</Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <Input 
+          <Input
             label="Email or Phone"
             value={identifier}
             onChangeText={setIdentifier}
             keyboardType="email-address"
             autoCapitalize="none"
+            placeholder="you@example.com"
           />
 
-          <Input 
+          <Input
             label="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            placeholder="••••••••"
           />
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.navigate('ForgotPassword')}
             style={styles.forgotBtn}
           >
             <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          <Button 
+          <Button
             title="Sign In"
             onPress={handleLogin}
             loading={loading}
             style={styles.loginBtn}
           />
-          
+
           {isBiometricSupported && (
-            <TouchableOpacity style={styles.biometricBtn} onPress={handleBiometricLogin}>
-              <Fingerprint size={24} color={Colors.primary} />
-              <Text style={styles.biometricText}>Login with Biometrics</Text>
-            </TouchableOpacity>
+            <Button
+              title="Login with Biometrics"
+              onPress={handleBiometricLogin}
+              variant="ghost"
+              style={styles.secondaryBtn}
+            />
           )}
 
-          <TouchableOpacity style={styles.googleBtn} onPress={handleGoogleLogin} disabled={googleLoading}>
-            <Text style={styles.googleBtnText}>{googleLoading ? 'Signing in...' : 'Continue with Google'}</Text>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={handleGoogleLogin}
+            disabled={googleLoading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.googleG}>G</Text>
+            <Text style={styles.googleBtnText}>
+              {googleLoading ? 'Signing in…' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -196,87 +214,112 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  logoBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
   },
   logoText: {
-    fontSize: 42,
+    fontSize: 34,
     fontWeight: '900',
     color: Colors.text,
-    letterSpacing: -1,
+    letterSpacing: -0.5,
+    fontFamily: Typography.heading,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
-    marginTop: 8,
+    marginTop: 6,
   },
   card: {
-    marginHorizontal: 10,
+    marginHorizontal: 6,
   },
   cardTitle: {
     fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
+    fontFamily: Typography.heading,
   },
   cardSubtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 24,
+    marginBottom: 22,
     marginTop: 4,
   },
   errorText: {
     color: Colors.error,
-    backgroundColor: '#FFEBEE',
-    padding: 10,
-    borderRadius: 12,
+    backgroundColor: '#FDECEA',
+    padding: 12,
+    borderRadius: Radius.sm,
     marginBottom: 16,
     fontSize: 13,
     textAlign: 'center',
+    fontWeight: '600',
   },
   forgotBtn: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 22,
   },
   forgotText: {
     color: Colors.primary,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: '700',
+    fontSize: 13,
   },
   loginBtn: {
-    marginTop: 10,
+    marginTop: 4,
   },
-  biometricBtn: {
+  secondaryBtn: {
+    marginTop: 12,
+  },
+  divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    backgroundColor: Colors.surface,
+    marginVertical: 20,
   },
-  biometricText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: '600',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    minHeight: 54,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.surface,
+  },
+  googleG: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#4285F4',
+    marginRight: 10,
   },
   googleBtnText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '600',
+    fontSize: 15,
+    color: Colors.text,
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
@@ -289,7 +332,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: Colors.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 14,
   },
 });
