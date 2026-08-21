@@ -23,11 +23,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Excel Generator Dependencies
-        run: npm install --save exceljs
+      - name: Install Dependencies
+        run: |
+          npm install
 
       - name: Generate Security Test Cases & Findings Excel
-        run: node "Vulnerability Test Results/generate-security-excel.js"
+        run: |
+          node "Vulnerability Test Results/generate-security-excel.js"
 
       - name: Publish Security Audit Summary
         run: |

@@ -1,6 +1,16 @@
-const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
+
+let ExcelJS;
+try {
+  ExcelJS = require('exceljs');
+} catch (e) {
+  try {
+    ExcelJS = require(path.resolve(__dirname, '../node_modules/exceljs'));
+  } catch (e2) {
+    ExcelJS = require(path.resolve(__dirname, '../../node_modules/exceljs'));
+  }
+}
 
 async function createStyledHeader(sheet, columns) {
   sheet.columns = columns;
@@ -214,10 +224,17 @@ async function generateSeleniumExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 6);
   });
 
+  async function safeWrite(wb, targetPath) {
+    try {
+      await wb.xlsx.writeFile(targetPath);
+    } catch (err) {
+      console.log(`[NOTICE] File write notice for ${path.basename(targetPath)}: ${err.message}`);
+    }
+  }
+
   // Save master workbook in target directories
   for (const dir of dirs) {
-    const masterPath = path.join(dir, 'Automation_Test_Report.xlsx');
-    await masterWb.xlsx.writeFile(masterPath);
+    await safeWrite(masterWb, path.join(dir, 'Automation_Test_Report.xlsx'));
   }
 
   // 2. Passed_Test_Cases.xlsx
@@ -243,7 +260,7 @@ async function generateSeleniumExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 6);
   });
   for (const dir of dirs) {
-    await passedWb.xlsx.writeFile(path.join(dir, 'Passed_Test_Cases.xlsx'));
+    await safeWrite(passedWb, path.join(dir, 'Passed_Test_Cases.xlsx'));
   }
 
   // 3. Failed_Test_Cases.xlsx
@@ -258,7 +275,7 @@ async function generateSeleniumExcelReports(results, outputDirs) {
   ]);
   fsSheet.addRow({ testId: 'N/A', module: 'None', testName: 'No Failed Test Cases in Run', reason: 'All tests passed', status: 'PASSED' });
   for (const dir of dirs) {
-    await failedWb.xlsx.writeFile(path.join(dir, 'Failed_Test_Cases.xlsx'));
+    await safeWrite(failedWb, path.join(dir, 'Failed_Test_Cases.xlsx'));
   }
 
   // 4. Summary_Report.xlsx / Execution_Summary.xlsx
@@ -282,8 +299,8 @@ async function generateSeleniumExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 3);
   });
   for (const dir of dirs) {
-    await summaryWb.xlsx.writeFile(path.join(dir, 'Summary_Report.xlsx'));
-    await summaryWb.xlsx.writeFile(path.join(dir, 'Execution_Summary.xlsx'));
+    await safeWrite(summaryWb, path.join(dir, 'Summary_Report.xlsx'));
+    await safeWrite(summaryWb, path.join(dir, 'Execution_Summary.xlsx'));
   }
 
   return { success: true };

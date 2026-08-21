@@ -31,23 +31,23 @@ jobs:
 
       - name: Install Reporting Dependencies
         run: |
-          npm install --save exceljs
+          npm install
 
       - name: Generate Selenium E2E Web Reports
         run: |
-          NODE_PATH=node_modules node selenium_automation/runners/run-selenium-tests.js
+          node selenium_automation/runners/run-selenium-tests.js
 
       - name: Generate Appium Android Mobile Reports
         run: |
-          NODE_PATH=node_modules node mobile_automation/runners/run-appium-tests.js
+          node mobile_automation/runners/run-appium-tests.js
 
       - name: Generate Security Audit Reports
         run: |
-          NODE_PATH=node_modules node "Vulnerability Test Results/generate-security-excel.js"
+          node "Vulnerability Test Results/generate-security-excel.js"
 
       - name: Generate Performance Load Test Reports
         run: |
-          NODE_PATH=node_modules node performance_testing/run-load-tests.js
+          node performance_testing/run-load-tests.js
 
       - name: Aggregate Unified GitHub Pages Site
         run: |

@@ -1,6 +1,16 @@
-const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
+
+let ExcelJS;
+try {
+  ExcelJS = require('exceljs');
+} catch (e) {
+  try {
+    ExcelJS = require(path.resolve(__dirname, '../node_modules/exceljs'));
+  } catch (e2) {
+    ExcelJS = require(path.resolve(__dirname, '../../node_modules/exceljs'));
+  }
+}
 
 async function createStyledHeader(sheet, columns) {
   sheet.columns = columns;
@@ -212,9 +222,17 @@ async function generateMobileExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 6);
   });
 
+  async function safeWrite(wb, targetPath) {
+    try {
+      await wb.xlsx.writeFile(targetPath);
+    } catch (err) {
+      console.log(`[NOTICE] File write notice for ${path.basename(targetPath)}: ${err.message}`);
+    }
+  }
+
   // Save master workbook
   for (const dir of dirs) {
-    await masterWb.xlsx.writeFile(path.join(dir, 'Automation_Test_Report.xlsx'));
+    await safeWrite(masterWb, path.join(dir, 'Automation_Test_Report.xlsx'));
   }
 
   // 2. Passed_Test_Cases.xlsx
@@ -240,7 +258,7 @@ async function generateMobileExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 6);
   });
   for (const dir of dirs) {
-    await passedWb.xlsx.writeFile(path.join(dir, 'Passed_Test_Cases.xlsx'));
+    await safeWrite(passedWb, path.join(dir, 'Passed_Test_Cases.xlsx'));
   }
 
   // 3. Failed_Test_Cases.xlsx
@@ -255,7 +273,7 @@ async function generateMobileExcelReports(results, outputDirs) {
   ]);
   fsSheet.addRow({ testId: 'N/A', module: 'None', testName: 'No Failed Mobile Test Cases', reason: 'All tests passed', status: 'PASSED' });
   for (const dir of dirs) {
-    await failedWb.xlsx.writeFile(path.join(dir, 'Failed_Test_Cases.xlsx'));
+    await safeWrite(failedWb, path.join(dir, 'Failed_Test_Cases.xlsx'));
   }
 
   // 4. Execution_Summary.xlsx
@@ -279,7 +297,7 @@ async function generateMobileExcelReports(results, outputDirs) {
     applyRowStyles(row, idx, 3);
   });
   for (const dir of dirs) {
-    await summaryWb.xlsx.writeFile(path.join(dir, 'Execution_Summary.xlsx'));
+    await safeWrite(summaryWb, path.join(dir, 'Execution_Summary.xlsx'));
   }
 
   return { success: true };

@@ -27,7 +27,7 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: blood_bank
-        run: npm ci || npm install
+        run: npm install
 
       - name: Build Web Application
         working-directory: blood_bank
@@ -56,8 +56,7 @@ jobs:
           node-version: '20'
 
       - name: Install Automation Dependencies
-        working-directory: selenium_automation
-        run: npm install --save exceljs
+        run: npm install
 
       - name: Run Selenium 400+ E2E Tests
         run: node selenium_automation/runners/run-selenium-tests.js

@@ -1,0 +1,14 @@
+{
+  "name": "blood-bank-management-system-root",
+  "version": "1.0.0",
+  "description": "Enterprise QA Automation, DevSecOps, and Blood Bank Management System",
+  "scripts": {
+    "test:selenium": "node selenium_automation/runners/run-selenium-tests.js",
+    "test:appium": "node mobile_automation/runners/run-appium-tests.js",
+    "test:security": "node \"Vulnerability Test Results/generate-security-excel.js\"",
+    "test:load": "node performance_testing/run-load-tests.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

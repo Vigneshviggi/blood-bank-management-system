@@ -31,7 +31,7 @@ jobs:
 
       - name: Install Mobile Dependencies
         working-directory: mobile_client
-        run: npm ci || npm install
+        run: npm install
 
       - name: Build Android Verification
         run: echo "Android build artifacts verified for Appium automation."
@@ -50,8 +50,7 @@ jobs:
           node-version: '20'
 
       - name: Install Mobile Automation Dependencies
-        working-directory: mobile_automation
-        run: npm install --save exceljs
+        run: npm install
 
       - name: Execute Appium 400+ Test Suite
         run: node mobile_automation/runners/run-appium-tests.js
