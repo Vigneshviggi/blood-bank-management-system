@@ -1,0 +1,18 @@
+{
+  "name": "selenium-web-automation",
+  "version": "1.0.0",
+  "description": "Enterprise Selenium E2E Web Automation Suite for Blood Bank Management System",
+  "main": "runners/run-selenium-tests.js",
+  "scripts": {
+    "test": "node runners/run-selenium-tests.js",
+    "test:headless": "HEADLESS=true node runners/run-selenium-tests.js",
+    "generate-reports": "node utils/excelReporter.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "chromedriver": "^133.0.0",
+    "selenium-webdriver": "^4.28.0"
+  }
+}

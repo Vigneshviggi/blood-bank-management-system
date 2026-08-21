@@ -1,0 +1,83 @@
+name: Live GitHub Pages Deployment & Selenium E2E Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    name: 1. Build & Deploy Web Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Frontend Dependencies
+        working-directory: blood_bank
+        run: npm ci || npm install
+
+      - name: Build Web Application
+        working-directory: blood_bank
+        run: npm run build
+
+      - name: Verify Build Output
+        run: |
+          if [ -d "blood_bank/dist" ]; then
+            echo "Build successful! dist directory contains:"
+            ls -la blood_bank/dist
+          else
+            echo "Build failed!" && exit 1
+          fi
+
+  selenium-e2e-tests:
+    name: 2. Selenium E2E 400+ Web Tests
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Automation Dependencies
+        working-directory: selenium_automation
+        run: npm install --save exceljs
+
+      - name: Run Selenium 400+ E2E Tests
+        run: node selenium_automation/runners/run-selenium-tests.js
+        env:
+          BASE_URL: 'https://vigneshviggi.github.io/blood-bank-management-system/'
+          HEADLESS: 'true'
+
+      - name: Upload Excel Test Reports & Evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Selenium-Web-E2E-Excel-Reports
+          path: |
+            selenium_automation/reports/Excel/Automation_Test_Report.xlsx
+            selenium_automation/reports/Excel/Passed_Test_Cases.xlsx
+            selenium_automation/reports/Excel/Failed_Test_Cases.xlsx
+            selenium_automation/reports/Excel/Summary_Report.xlsx
+            selenium_automation/reports/HTML/execution-report.html
+            selenium_automation/reports/HTML/dashboard.html
+            selenium_automation/reports/JSON/execution-results.json
+            selenium_automation/screenshots/
+            selenium_automation/logs/
+          retention-days: 30

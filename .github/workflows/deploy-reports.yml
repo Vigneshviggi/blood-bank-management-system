@@ -1,0 +1,66 @@
+name: Publish QA Automation & Security Reports to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly run on Sundays
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  build-and-aggregate-reports:
+    name: 1. Generate & Aggregate Unified QA Reports
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Reporting Dependencies
+        run: |
+          npm install --save exceljs
+
+      - name: Generate Selenium E2E Web Reports
+        run: |
+          NODE_PATH=node_modules node selenium_automation/runners/run-selenium-tests.js
+
+      - name: Generate Appium Android Mobile Reports
+        run: |
+          NODE_PATH=node_modules node mobile_automation/runners/run-appium-tests.js
+
+      - name: Generate Security Audit Reports
+        run: |
+          NODE_PATH=node_modules node "Vulnerability Test Results/generate-security-excel.js"
+
+      - name: Generate Performance Load Test Reports
+        run: |
+          NODE_PATH=node_modules node performance_testing/run-load-tests.js
+
+      - name: Aggregate Unified GitHub Pages Site
+        run: |
+          mkdir -p public_reports/latest
+          mkdir -p public_reports/history/build-${{ github.run_number }}
+          cp -r "Test Results/"* public_reports/latest/
+          cp -r "Test Results/"* public_reports/history/build-${{ github.run_number }}/
+
+      - name: Upload All QA & Security Workbooks
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Complete-Blood-Bank-QA-Automation-Artifacts
+          path: |
+            Test Results/
+          retention-days: 30

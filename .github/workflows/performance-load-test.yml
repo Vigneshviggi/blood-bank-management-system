@@ -1,0 +1,46 @@
+name: Baseline & Load Testing (100 VUs / RPS & Latency)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-load-test:
+    name: 1. Execute Baseline 100 VU Load Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Load Test Dependencies
+        run: |
+          npm install --save exceljs
+
+      - name: Run Load Testing Suite (100 VUs / 1 min)
+        run: |
+          NODE_PATH=node_modules node performance_testing/run-load-tests.js
+
+      - name: Upload Performance Load Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Performance-Load-Testing-Reports
+          path: |
+            performance_testing/reports/Excel/Performance_Load_Report.xlsx
+            performance_testing/reports/Summary/performance-summary.md
+            Vulnerability Test Results/performance-report.md
+            Vulnerability Test Results/k6-load-test.js
+            Vulnerability Test Results/artillery-load-test.yml
+            Vulnerability Test Results/jmeter-test-plan.jmx
+          retention-days: 30

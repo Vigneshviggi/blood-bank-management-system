@@ -1,0 +1,17 @@
+{
+  "name": "mobile-appium-automation",
+  "version": "1.0.0",
+  "description": "Enterprise Appium Android Mobile Automation Suite for Blood Bank Mobile App",
+  "main": "runners/run-appium-tests.js",
+  "scripts": {
+    "test": "node runners/run-appium-tests.js",
+    "generate-reports": "node utils/mobileExcelReporter.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "appium": "^2.11.0",
+    "webdriverio": "^8.38.0"
+  }
+}

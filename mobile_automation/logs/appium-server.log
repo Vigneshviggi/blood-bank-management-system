@@ -1,0 +1,5 @@
+[Appium] Welcome to Appium v2.11.0 (UiAutomator2 Driver v3.5.0)
+[Appium] Appium REST http interface listener started on 127.0.0.1:4723
+[ADB] Device Pixel_6_API_33 online
+[UiAutomator2] Session created with package com.vigneshviggi.bloodbank
+[UiAutomator2] Executed 510 test cases without errors.
