@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../constants/Theme';
 
 export default function SubmitButton({ title, onPress, isLoading, disabled }) {
   const handlePress = () => {
@@ -18,39 +19,40 @@ export default function SubmitButton({ title, onPress, isLoading, disabled }) {
       disabled={isLoading || disabled}
       activeOpacity={0.8}
     >
-      {isLoading ? (
-        <ActivityIndicator color="#FFF" size="small" />
-      ) : (
-        <Text style={styles.text}>{title}</Text>
-      )}
+      <View style={styles.content}>
+        {isLoading ? (
+          <ActivityIndicator color="#FFF" size="small" />
+        ) : (
+          <Text style={styles.text}>{title}</Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#C81E4A',
-    paddingVertical: 18,
-    borderRadius: 14,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
-    shadowColor: '#C81E4A',
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    minHeight: 56,
   },
   buttonDisabled: {
-    backgroundColor: '#7A1C1A',
-    shadowOpacity: 0,
-    elevation: 0,
+    opacity: 0.7,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   text: {
-    color: '#FFF',
+    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

@@ -49,18 +49,27 @@ const RegisterScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const endpoint = '/users/register';
-      const payload = { 
-        ...formData, 
+      const endpoint = 'users/register';
+      const payload = {
+        ...formData,
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        location: formData.location.trim(),
         role,
-        bloodGroup: formData.bloodGroup || 'O+' // Fallback for roles like Hospital that don't select a blood group
+        bloodGroup: role === 'donor' || role === 'volunteer' ? formData.bloodGroup : undefined
       };
+
+      if (!payload.bloodGroup) {
+        delete payload.bloodGroup;
+      }
+
       await api.post(endpoint, payload);
 
       Alert.alert(
-        'Registration Successful',
-        `Account registered successfully as ${role.toUpperCase()}! You can now log in.`,
-        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        'Check your email',
+        'We sent a verification code to your email. Please verify your account before logging in.',
+        [{ text: 'Continue', onPress: () => navigation.navigate('OTPVerification', { email: payload.email, mode: 'register' }) }]
       );
     } catch (err) {
       console.error(err);
@@ -166,7 +175,7 @@ const RegisterScreen = ({ navigation }) => {
           placeholder="••••••••"
           value={formData.password}
           onChangeText={(val) => handleChange('password', val)}
-          secureTextEntry
+          isPassword
           error={errors.password}
         />
 

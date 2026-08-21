@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
 
-const ResponseModal = ({ visible, onClose, onSubmit, request }) => {
+const ResponseModal = ({ visible, onClose, onSubmit, request, submitting }) => {
   const [eta, setEta] = useState('');
   const [note, setNote] = useState('');
 
   const handleAccept = () => {
-    onSubmit({ status: 'Accepted', eta, note });
-    setEta('');
-    setNote('');
+    if (!eta || isNaN(eta) || Number(eta) <= 0) {
+      Alert.alert('Invalid ETA', 'Please enter a valid ETA greater than 0 minutes.');
+      return;
+    }
+    onSubmit({ status: 'Accepted', eta: Number(eta).toString(), note });
   };
   const handleReject = () => {
     onSubmit({ status: 'Rejected', note });
-    setEta('');
-    setNote('');
-  };
-  const handleMaybeLater = () => {
-    onSubmit({ status: 'Maybe Later', note });
-    setEta('');
-    setNote('');
   };
 
   return (
@@ -42,17 +37,14 @@ const ResponseModal = ({ visible, onClose, onSubmit, request }) => {
             placeholder="Optional note"
           />
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept}>
-              <Text style={styles.btnText}>Accept</Text>
+            <TouchableOpacity style={[styles.acceptBtn, submitting && styles.disabledBtn]} onPress={handleAccept} disabled={submitting}>
+              <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Accept Request'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.maybeBtn} onPress={handleMaybeLater}>
-              <Text style={styles.btnText}>Maybe Later</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.rejectBtn} onPress={handleReject}>
-              <Text style={styles.btnText}>Reject</Text>
+            <TouchableOpacity style={[styles.rejectBtn, submitting && styles.disabledBtn]} onPress={handleReject} disabled={submitting}>
+              <Text style={styles.btnText}>{submitting ? 'Submitting...' : 'Reject Request'}</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={submitting}>
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -96,29 +88,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FBF7F6',
   },
   actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-    marginTop: 10,
-    flexWrap: 'wrap',
+    flexDirection: 'column',
+    gap: 12,
+    marginTop: 16,
   },
   acceptBtn: {
     backgroundColor: '#0E9F6E',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-  },
-  maybeBtn: {
-    backgroundColor: '#DC7609',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
   rejectBtn: {
     backgroundColor: '#C81E4A',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
   btnText: {
     color: '#fff',
@@ -133,6 +117,9 @@ const styles = StyleSheet.create({
     color: '#2D6CDF',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  disabledBtn: {
+    opacity: 0.6,
   },
 });
 

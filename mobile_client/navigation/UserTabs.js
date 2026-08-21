@@ -11,43 +11,52 @@ import ProfileScreen from '../screens/ProfileScreen';
 import RequestDetailsScreen from '../screens/RequestDetailsScreen';
 import CampDetailsScreen from '../screens/CampDetailsScreen';
 import BloodRequestScreen from '../screens/BloodRequestScreen';
+import DonorsScreen from '../screens/DonorsScreen';
+import RequestHistoryScreen from '../screens/RequestHistoryScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import CustomTabBar from '../components/CustomTabBar';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-import CustomTabBar from '../components/CustomTabBar';
+const stackScreenOptions = {
+  headerShown: false,
+  animation: 'slide_from_right',
+  animationDuration: 250,
+};
 
 const HomeStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={stackScreenOptions}>
     <Stack.Screen name="HomeScreen" component={HomeScreen} />
+    <Stack.Screen name="DonorsScreen" component={DonorsScreen} />
+    <Stack.Screen name="DonorProfile" component={ProfileScreen} />
     <Stack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <Stack.Screen name="CampDetails" component={CampDetailsScreen} />
   </Stack.Navigator>
 );
 
 const RequestsStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={stackScreenOptions}>
     <Stack.Screen name="RequestsScreen" component={RequestsScreen} />
+    <Stack.Screen name="DonorsScreen" component={DonorsScreen} />
+    <Stack.Screen name="DonorProfile" component={ProfileScreen} />
+    <Stack.Screen name="BloodRequest" component={BloodRequestScreen} />
     <Stack.Screen name="MyResponses" component={MyResponsesScreen} />
     <Stack.Screen name="CompletedRequests" component={CompletedRequestsScreen} />
     <Stack.Screen name="RequestDetails" component={RequestDetailsScreen} />
-    <Stack.Screen name="BloodRequest" component={BloodRequestScreen} />
   </Stack.Navigator>
 );
 
 const CampsStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+  <Stack.Navigator screenOptions={stackScreenOptions}>
     <Stack.Screen name="CampsScreen" component={CampsScreen} />
     <Stack.Screen name="CampDetails" component={CampDetailsScreen} />
   </Stack.Navigator>
 );
 
-import RequestHistoryScreen from '../screens/RequestHistoryScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-
 const ProfileStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+  <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Screen name="ProfileScreen" component={ProfileScreen} initialParams={{ userId: null }} />
     <Stack.Screen name="RequestHistory" component={RequestHistoryScreen} />
     <Stack.Screen name="RequestDetails" component={RequestDetailsScreen} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -64,8 +73,8 @@ const UserTabs = () => {
     >
       <Tab.Screen name="Home" component={HomeStack} options={{ title: 'Home' }} />
       <Tab.Screen name="Requests" component={RequestsStack} options={{ title: 'Requests' }} />
-      <Tab.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Camps" component={CampsStack} options={{ title: 'Camps' }} />
+      <Tab.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );

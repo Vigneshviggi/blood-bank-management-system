@@ -1,33 +1,50 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Colors, Radius, Shadows } from '../constants/Theme';
-import { MapPin, Calendar, Users, Info, Building2, Clock, Bookmark, Navigation, UserPlus } from 'lucide-react-native';
+import { MapPin, Calendar, Users, Info, Building2, Clock, Bookmark, Navigation, CheckCircle2 } from 'lucide-react-native';
+import { openCampNavigation } from '../utils/navigationHelper';
 
 const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer = false }) => {
   const capacity = Number(camp.capacity || 0);
   const registered = Number(camp.registeredCount || 0);
   const occupancy = capacity > 0 ? Math.min(100, Math.round((registered / capacity) * 100)) : 0;
 
-  const isLive = camp.status === 'Ongoing' || new Date(camp.date).toDateString() === new Date().toDateString();
+  const now = new Date();
+  const startDate = new Date(camp.date);
+  const isCompleted = camp.status === 'Completed' || (new Date(camp.date).setHours(23, 59, 59, 999) < now);
+  const isLive = !isCompleted && startDate.toDateString() === now.toDateString();
+  
+  let statusText = 'UPCOMING';
+  if (isLive) statusText = 'LIVE';
+  if (isCompleted) statusText = 'COMPLETED';
+
   const bannerUri = camp.bannerImage || 'https://img.freepik.com/free-vector/blood-donation-concept-illustration_114360-1282.jpg';
 
   const defaultStartTime = camp.startTime || '09:00 AM';
   const defaultEndTime = camp.endTime || '04:00 PM';
+
+  const handleNavigate = () => {
+    openCampNavigation(camp);
+  };
 
   return (
     <View style={styles.card}>
       {/* LEFT Banner Image */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: bannerUri }} style={styles.banner} resizeMode="cover" />
-        <View style={[styles.statusBadge, isLive ? styles.statusLive : styles.statusUpcoming]}>
-          <Text style={styles.statusText}>{isLive ? 'LIVE' : 'UPCOMING'}</Text>
+        <View style={[styles.statusBadge, 
+          isLive ? styles.statusLive : 
+          isCompleted ? styles.statusCompleted : 
+          styles.statusUpcoming
+        ]}>
+          <Text style={styles.statusText}>{statusText}</Text>
         </View>
       </View>
 
       {/* RIGHT Content */}
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>{camp.title}</Text>
+          <Text style={styles.title} numberOfLines={2}>{camp.title || 'Blood Donation Camp'}</Text>
           <TouchableOpacity style={styles.bookmarkBtn}>
             <Bookmark size={20} color={Colors.textMuted} />
           </TouchableOpacity>
@@ -35,7 +52,7 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
 
         <View style={styles.infoRow}>
           <Building2 size={14} color={Colors.textSecondary} />
-          <Text style={styles.infoText} numberOfLines={1}>{camp.organizerName || 'LifeCare Hospitals'}</Text>
+          <Text style={styles.infoText} numberOfLines={1}>{camp.organizerName || 'LifeLink Partner'}</Text>
         </View>
 
         <View style={styles.infoRow}>
@@ -50,7 +67,7 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
 
         <View style={styles.infoRow}>
           <MapPin size={14} color={Colors.textSecondary} />
-          <Text style={styles.infoText} numberOfLines={1}>{camp.location}</Text>
+          <Text style={styles.infoText} numberOfLines={1}>{camp.location || 'Location unavailable'}</Text>
         </View>
 
         <View style={styles.progressSection}>
@@ -70,18 +87,18 @@ const CampCard = ({ camp, onPress, onRegister, isRegistered = false, isOrganizer
           {onRegister && (
             <TouchableOpacity
               style={[styles.actionBtnPrimary, isRegistered && styles.actionBtnRegistered]}
-              onPress={!isRegistered ? onRegister : undefined}
-              disabled={isRegistered}
+              onPress={!isRegistered && !isCompleted ? onRegister : undefined}
+              disabled={isRegistered || isCompleted}
               activeOpacity={0.85}
             >
-              <UserPlus size={14} color={isRegistered ? Colors.secondaryDark : Colors.primary} />
-              <Text style={[styles.actionTextPrimary, isRegistered && { color: Colors.secondaryDark }]}>
-                {isRegistered ? 'Registered' : 'Register'}
+              {isRegistered && <CheckCircle2 size={14} color="#16A34A" />}
+              <Text style={[styles.actionTextPrimary, isRegistered && { color: '#16A34A' }]}>
+                {isRegistered ? 'You Registered' : isCompleted ? 'Completed' : 'Register Now'}
               </Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.actionBtnSecondary} onPress={() => {}} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.actionBtnSecondary} onPress={handleNavigate} activeOpacity={0.85}>
             <Navigation size={14} color={Colors.text} />
             <Text style={styles.actionTextSecondary}>Navigate</Text>
           </TouchableOpacity>
@@ -106,13 +123,19 @@ const styles = StyleSheet.create({
     ...Shadows.soft,
   },
   imageContainer: {
-    width: 110,
+    width: 130, // Slightly wider for better proportions
     borderRadius: Radius.sm,
     overflow: 'hidden',
     position: 'relative',
     backgroundColor: Colors.backgroundAlt,
+    minHeight: 160, // Ensure a minimum height if content is short
   },
   banner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100%',
     height: '100%',
   },
@@ -125,10 +148,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusLive: {
-    backgroundColor: Colors.success,
+    backgroundColor: '#E53935',
   },
   statusUpcoming: {
-    backgroundColor: Colors.warning,
+    backgroundColor: '#F59E0B',
+  },
+  statusCompleted: {
+    backgroundColor: '#64748B',
   },
   statusText: {
     color: '#fff',
@@ -221,10 +247,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionBtnRegistered: {
-    backgroundColor: Colors.secondarySoft,
+    backgroundColor: '#F0FDF4', // Light green background
   },
   actionTextPrimary: {
-    color: Colors.primary,
+    color: '#E53935', // Primary red
     fontSize: 12,
     fontWeight: '700',
   },

@@ -4,6 +4,7 @@ import AuthLayout from './AuthLayout.jsx'
 import LoadingButton from './ui/LoadingButton.jsx'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext.jsx'
+import { getCurrentCoordinates, reverseGeocode } from '../services/locationService'
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -13,15 +14,42 @@ export default function Register() {
     phone: '',
     password: '',
     location: '',
-    bloodGroup: 'A+'
+    bloodGroup: 'A+',
+    latitude: '',
+    longitude: ''
   })
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
   const [errorMsg, setErrorMsg] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [gpsLoading, setGpsLoading] = useState(false)
 
   const { register } = useAuth()
   const navigate = useNavigate()
+
+  const handleGetLocation = async () => {
+    setGpsLoading(true)
+    try {
+      const coords = await getCurrentCoordinates()
+      let readableLocation = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`
+      try {
+        const address = await reverseGeocode(coords.latitude, coords.longitude)
+        if (address) readableLocation = address
+      } catch (_e) {}
+
+      setForm(prev => ({
+        ...prev,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        location: readableLocation
+      }))
+      toast.success(`Location acquired: ${readableLocation}`)
+    } catch (err) {
+      toast.error(err.message || 'Unable to fetch current GPS location')
+    } finally {
+      setGpsLoading(false)
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -38,8 +66,7 @@ export default function Register() {
     else if (!/^\d{10}$/.test(form.phone)) next.phone = 'Please enter a valid 10-digit phone number'
     if (!form.password) next.password = 'Password is required'
     else if (form.password.length < 6) next.password = 'Password must be at least 6 characters'
-    if (!form.location.trim()) next.location = 'Location details are required'
-    if (form.role === 'donor' && !form.bloodGroup) next.bloodGroup = 'Blood group is required'
+    if (!form.location.trim()) next.location = 'Location is required'
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -52,10 +79,44 @@ export default function Register() {
     setErrorMsg('')
     
     try {
-      const result = await register(form)
+      const payload = {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        location: form.location.trim()
+      }
+
+      if (
+        form.latitude !== '' &&
+        form.longitude !== '' &&
+        !isNaN(Number(form.latitude)) &&
+        !isNaN(Number(form.longitude))
+      ) {
+        const lat = Number(form.latitude)
+        const lng = Number(form.longitude)
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0)) {
+          payload.latitude = lat
+          payload.longitude = lng
+          payload.coordinates = {
+            type: 'Point',
+            coordinates: [lng, lat]
+          }
+        }
+      }
+
+      if (payload.role !== 'donor') {
+        delete payload.bloodGroup
+      }
+
+      const result = await register(payload)
       if (result.success) {
-        toast.success(`Registration successful! Welcome to the LifeLink Network.`)
-        navigate('/login')
+        toast.success(`Verification code sent to ${payload.email}`)
+        sessionStorage.setItem('registerEmail', payload.email)
+        localStorage.setItem('pendingVerificationEmail', payload.email)
+        navigate(`/verify-otp?mode=register&email=${encodeURIComponent(payload.email)}`, {
+          state: { email: payload.email, mode: 'register' }
+        })
       } else {
         toast.error(result.error || 'Registration failed. Please try again.')
         setErrorMsg(result.error || 'Registration failed. Please try again.')
@@ -173,16 +234,32 @@ export default function Register() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-gray-300 mb-2 ml-1">Office/Home Location</label>
-            <input
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              className={`w-full rounded-2xl bg-slate-50 dark:bg-gray-800/50 border-2 px-4 py-3.5 text-sm outline-none transition-all ${
-                errors.location ? 'border-red-500 bg-red-50/30' : 'border-transparent focus:border-red-500 focus:bg-white dark:focus:bg-gray-800'
-              } dark:text-white`}
-              placeholder="City, Region"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                className={`flex-1 rounded-2xl bg-slate-50 dark:bg-gray-800/50 border-2 px-4 py-3.5 text-sm outline-none transition-all ${
+                  errors.location ? 'border-red-500 bg-red-50/30' : 'border-transparent focus:border-red-500 focus:bg-white dark:focus:bg-gray-800'
+                } dark:text-white`}
+                placeholder="City, Region"
+              />
+              <button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={gpsLoading}
+                className="px-4 py-3.5 rounded-2xl bg-slate-900 dark:bg-gray-700 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                title="Detect current GPS coordinates"
+              >
+                {gpsLoading ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <span>📍</span>
+                )}
+                <span className="hidden sm:inline">GPS</span>
+              </button>
+            </div>
             {errors.location && <p className="mt-2 text-xs font-medium text-red-600 ml-1">{errors.location}</p>}
           </div>
 

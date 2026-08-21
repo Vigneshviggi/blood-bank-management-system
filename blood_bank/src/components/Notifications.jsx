@@ -4,15 +4,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Info, CheckCircle, Trash2, Calendar, Clock, ArrowRight, BellOff, Droplets } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BackButton from './BackButton';
+import { useAuth } from '../context/AuthContext';
+import { io } from 'socket.io-client';
+
+const socket = io(import.meta.env.VITE_API_URL);
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+    
+    if (user) {
+      socket.on('new_notification', (notification) => {
+        if (!notification.userId || notification.userId === user._id) {
+          setNotifications(prev => [notification, ...prev]);
+        }
+      });
+    }
+
+    return () => {
+      socket.off('new_notification');
+    };
+  }, [user]);
 
   const fetchNotifications = async () => {
     try {

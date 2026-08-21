@@ -73,10 +73,23 @@ export const AuthProvider = ({ children }) => {
     try {
       await AsyncStorage.setItem('token', token);
       const decoded = jwtDecode(token);
-      const currentUser = profile || decoded;
-      setUser(currentUser);
-      setRole(currentUser?.role || decoded.role);
-      await AsyncStorage.setItem('user', JSON.stringify(currentUser));
+      
+      // Clear any old state before loading new user
+      setUser(null);
+      setRole(null);
+      
+      if (profile) {
+        setUser(profile);
+        setRole(profile.role || decoded.role);
+        await AsyncStorage.setItem('user', JSON.stringify(profile));
+      } else {
+        // Fetch fresh profile if not provided
+        const profileResponse = await api.get('/users/profile');
+        const fetchedProfile = profileResponse.data?.user || decoded;
+        setUser(fetchedProfile);
+        setRole(fetchedProfile?.role || decoded.role);
+        await AsyncStorage.setItem('user', JSON.stringify(fetchedProfile));
+      }
     } catch (err) {
       console.error('Login error', err);
     }
@@ -97,6 +110,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
       setUser(null);
       setRole(null);
     } catch (err) {

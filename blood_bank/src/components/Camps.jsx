@@ -45,7 +45,6 @@ export default function Camps() {
     try {
       showLoading('Processing registration...')
       await axios.post(`${import.meta.env.VITE_API_URL}/api/camps/${campId}/register`, {
-        userId: user._id,
         bloodGroup: user.bloodGroup,
         contactInfo: user.phone
       })
@@ -66,6 +65,20 @@ export default function Camps() {
       (!filters.status || camp.status === filters.status)
     )
   })
+
+  const getCampNavigationUrl = (camp) => {
+    if (camp.coordinates && Array.isArray(camp.coordinates.coordinates) && camp.coordinates.coordinates.length === 2) {
+      const longitude = camp.coordinates.coordinates[0];
+      const latitude = camp.coordinates.coordinates[1];
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+      }
+    }
+    if (camp.location) {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(camp.location)}`;
+    }
+    return null;
+  };
 
   return (
     <div className="px-4 pb-12 sm:px-6 lg:px-8 animate-in fade-in duration-500">
@@ -164,29 +177,42 @@ export default function Camps() {
                       <span className="text-lg font-black text-slate-900 dark:text-white">{camp.registeredCount} / {camp.capacity}</span>
                     </div>
                     
-                    {user?.role === 'donor' ? (
+                    <div className="flex gap-2">
                       <button 
-                        onClick={() => handleRegister(camp._id)}
-                        disabled={camp.registeredCount >= camp.capacity}
-                        className="rounded-2xl bg-slate-900 dark:bg-red-600 px-6 py-3 text-xs font-black text-white transition hover:scale-105 active:scale-95 disabled:opacity-50"
+                        onClick={() => {
+                          const url = getCampNavigationUrl(camp);
+                          if (url) window.open(url, '_blank');
+                          else toast.error('Location unavailable');
+                        }}
+                        className="rounded-2xl bg-blue-100 dark:bg-blue-900/30 px-4 py-3 text-xs font-black text-blue-600 dark:text-blue-400 transition hover:bg-blue-200"
                       >
-                        Register Now
+                        Navigate
                       </button>
-                    ) : (camp.organizerId === user?._id || user?.role === 'admin') ? (
-                      <button 
-                        onClick={() => navigate(`/camp/${camp._id}`)}
-                        className="rounded-2xl bg-emerald-600 px-6 py-3 text-xs font-black text-white transition hover:scale-105 active:scale-95"
-                      >
-                        Manage
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => navigate(`/camp/${camp._id}`)}
-                        className="rounded-2xl bg-slate-100 dark:bg-gray-800 px-6 py-3 text-xs font-black text-slate-600 dark:text-gray-400 transition hover:bg-slate-200"
-                      >
-                        Details
-                      </button>
-                    )}
+                      
+                      {user?.role === 'donor' ? (
+                        <button 
+                          onClick={() => handleRegister(camp._id)}
+                          disabled={camp.registeredCount >= camp.capacity}
+                          className="rounded-2xl bg-slate-900 dark:bg-red-600 px-6 py-3 text-xs font-black text-white transition hover:scale-105 active:scale-95 disabled:opacity-50"
+                        >
+                          Register
+                        </button>
+                      ) : (camp.organizerId === user?._id || user?.role === 'admin') ? (
+                        <button 
+                          onClick={() => navigate(`/camp/${camp._id}`)}
+                          className="rounded-2xl bg-emerald-600 px-6 py-3 text-xs font-black text-white transition hover:scale-105 active:scale-95"
+                        >
+                          Manage
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => navigate(`/camp/${camp._id}`)}
+                          className="rounded-2xl bg-slate-100 dark:bg-gray-800 px-6 py-3 text-xs font-black text-slate-600 dark:text-gray-400 transition hover:bg-slate-200"
+                        >
+                          Details
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

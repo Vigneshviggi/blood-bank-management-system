@@ -1,14 +1,20 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MapPin } from 'lucide-react-native';
+import * as Location from 'expo-location';
 import { useBloodRequestForm } from '../hooks/useBloodRequestForm';
+import { Colors } from '../constants/Theme';
+import ScreenHeader from '../components/ScreenHeader';
 
 // Custom Reusable Form Components
 import BloodGroupSelector from '../components/forms/BloodGroupSelector';
@@ -32,13 +38,49 @@ export default function BloodRequestScreen({ navigation }) {
     submitForm
   } = useBloodRequestForm(navigation);
 
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  const captureLocation = async () => {
+    setGpsLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission was denied. You can enter the pickup address manually.');
+        setGpsLoading(false);
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({});
+      let readableAddress = 'Current device location';
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+        if (geocode && geocode.length > 0) {
+          const addr = geocode[0];
+          readableAddress = [addr.city || addr.subregion, addr.region || addr.country].filter(Boolean).join(', ');
+        }
+      } catch (geoErr) {
+        console.log("Reverse geocode failed", geoErr);
+      }
+
+      updateField('latitude', String(loc.coords.latitude));
+      updateField('longitude', String(loc.coords.longitude));
+      updateField('location', readableAddress);
+    } catch (err) {
+      console.log('Unable to fetch location', err);
+      Alert.alert('Error', 'Unable to determine your location. Please enter the address manually.');
+    } finally {
+      setGpsLoading(false);
+    }
+  };
+
   const containerStyle = useMemo(() => [
     styles.scrollContainer, 
-    { paddingBottom: Math.max(insets.bottom + 120, 120) } // Ensure large padding for BottomNav + Button
+    { paddingBottom: Math.max(insets.bottom + 130, 150) }
   ], [insets.bottom]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScreenHeader title="Blood Request" subtitle="Urgent Request Form" />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -47,13 +89,8 @@ export default function BloodRequestScreen({ navigation }) {
           contentContainerStyle={containerStyle} 
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={true}
         >
-          {/* Header Section */}
-          <View style={styles.headerContainer}>
-            <Text style={styles.headerTitle}>Blood Request</Text>
-            <Text style={styles.headerSubtitle}>Urgent Request Form</Text>
-          </View>
-
           <View style={styles.formContainer}>
             <BloodGroupSelector 
               selectedGroup={formData.bloodGroup} 
@@ -98,6 +135,15 @@ export default function BloodRequestScreen({ navigation }) {
               onChangeText={(text) => updateField('location', text)}
               error={errors.location}
               maxLength={150}
+              rightElement={
+                <TouchableOpacity 
+                  style={styles.gpsBtn} 
+                  onPress={captureLocation}
+                  disabled={gpsLoading}
+                >
+                  {gpsLoading ? <ActivityIndicator color={Colors.primary} size="small" /> : <MapPin size={20} color={Colors.primary} />}
+                </TouchableOpacity>
+              }
             />
 
             <FormInput 
@@ -117,6 +163,7 @@ export default function BloodRequestScreen({ navigation }) {
               disabled={isLoading}
             />
           </View>
+          <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -134,42 +181,36 @@ export default function BloodRequestScreen({ navigation }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212', // Pure dark for seamless UI
+    backgroundColor: Colors.background,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,
-  },
-  headerContainer: {
-    backgroundColor: '#C81E4A',
-    paddingTop: 30,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    alignItems: 'center',
-    shadowColor: '#C81E4A',
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  headerTitle: {
-    color: '#FFF',
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 15,
-    marginTop: 6,
-    fontWeight: '500',
+    padding: 16,
   },
   formContainer: {
-    padding: 24,
-    marginTop: -20, // Overlap the header slightly for a modern card feel
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#101828',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  gpsBtn: {
+    backgroundColor: '#FDE7ED',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 8,
+    height: 48,
+    width: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: -1,
   },
 });

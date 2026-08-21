@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 
+import { Colors } from '../../constants/Theme';
+
 export default function FormInput({ 
   label, 
   error, 
   maxLength, 
   value,
+  rightElement,
   ...props 
 }) {
   const [isFocused, setIsFocused] = useState(false);
@@ -22,21 +25,28 @@ export default function FormInput({
           </Text>
         )}
       </View>
-      
-      <TextInput
-        style={[
-          styles.input,
-          props.multiline && styles.inputMultiline,
-          isFocused && styles.inputFocused,
-          error && styles.inputError,
-        ]}
-        placeholderTextColor="#6E6771"
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        maxLength={maxLength}
-        value={value}
-        {...props}
-      />
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={[
+            styles.input,
+            props.multiline && styles.inputMultiline,
+            isFocused && styles.inputFocused,
+            error && styles.inputError,
+            rightElement && { paddingRight: 48 }, // Make room for right element
+          ]}
+          placeholderTextColor={Colors.textSecondary}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          maxLength={maxLength}
+          value={value}
+          {...props}
+        />
+        {rightElement && (
+          <View style={styles.rightElementContainer}>
+            {rightElement}
+          </View>
+        )}
+      </View>
       
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -54,42 +64,53 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   label: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   labelError: {
-    color: '#C81E4A',
+    color: Colors.error,
   },
   charCount: {
-    color: '#6E6771',
-    fontSize: 12,
+    color: Colors.textMuted,
+    fontSize: 11,
+  },
+  inputContainer: {
+    position: 'relative',
+    justifyContent: 'center',
   },
   input: {
-    backgroundColor: '#1D1B20',
-    borderRadius: 12,
-    padding: 16,
-    color: '#FFF',
-    fontSize: 16,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 14,
+    fontSize: 15,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 48,
   },
   inputMultiline: {
     height: 100,
     textAlignVertical: 'top',
   },
   inputFocused: {
-    borderColor: '#4A4A4A',
-    backgroundColor: '#1D1B20',
+    borderColor: Colors.primary,
   },
   inputError: {
-    borderColor: 'rgba(255, 82, 82, 0.5)',
-    backgroundColor: 'rgba(255, 82, 82, 0.05)',
+    borderColor: Colors.error,
+  },
+  rightElementContainer: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
-    color: '#C81E4A',
+    color: Colors.error,
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',

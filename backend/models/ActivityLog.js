@@ -8,8 +8,7 @@ const activityLogSchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    required: true,
-    enum: ['LOGIN', 'REGISTER', 'CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'SEARCH', 'OTHER']
+    required: true
   },
   details: {
     type: String,

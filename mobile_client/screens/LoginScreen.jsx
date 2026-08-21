@@ -150,7 +150,7 @@ const LoginScreen = ({ navigation }) => {
             label="Password"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            isPassword
             placeholder="••••••••"
           />
 

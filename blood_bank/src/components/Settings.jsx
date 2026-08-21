@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useDarkMode } from '../context/DarkModeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -19,10 +20,10 @@ export default function Settings() {
     location: user?.location || 'New York, USA',
   })
 
-  const [notifications, setNotifications] = useState({
-    emergency: true,
-    camps: true,
-    general: false
+  const [preferences, setPreferences] = useState({
+    pushNotifications: user?.preferences?.pushNotifications ?? true,
+    emailAlerts: user?.preferences?.emailAlerts ?? true,
+    locationSharing: user?.preferences?.locationSharing ?? true
   })
 
   const handleInputChange = (e) => {
@@ -30,13 +31,39 @@ export default function Settings() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const toggleNotification = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }))
+  const togglePreference = async (key) => {
+    const newValue = !preferences[key];
+    setPreferences(prev => ({ ...prev, [key]: newValue }));
+    
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/users/preferences`, {
+        [key]: newValue
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      toast.success('Preference updated successfully');
+    } catch (error) {
+      setPreferences(prev => ({ ...prev, [key]: !newValue })); // Revert on failure
+      toast.error('Failed to update preference');
+    }
   }
 
   const handleSave = () => {
     toast.success('Settings saved successfully! (Demo Mode)')
   }
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm("Logout from all devices?")) return;
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/logout-all`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      toast.success("All active sessions have been signed out.");
+      logout();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to logout from all devices');
+    }
+  };
 
   const tabs = [
     { id: 'account', label: 'Account', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> },
@@ -181,9 +208,9 @@ export default function Settings() {
                   
                   <div className="mt-6 space-y-4">
                     {[
-                      { id: 'emergency', label: 'Emergency Alerts', desc: 'Instant alerts for critical blood needs in your area' },
-                      { id: 'camps', label: 'Donation Camps', desc: 'Weekly updates on upcoming blood drives' },
-                      { id: 'general', label: 'System Updates', desc: 'Monthly newsletter and feature announcements' },
+                      { id: 'pushNotifications', label: 'Push Notifications', desc: 'Receive real-time push alerts on your device' },
+                      { id: 'emailAlerts', label: 'Email Alerts', desc: 'Receive important updates and newsletters via email' },
+                      { id: 'locationSharing', label: 'Location Sharing', desc: 'Share your location for better donor matching' },
                     ].map((item) => (
                       <div key={item.id} className="flex items-center justify-between">
                         <div className="flex-1 pr-4">
@@ -191,13 +218,13 @@ export default function Settings() {
                           <p className="text-xs text-slate-500 dark:text-gray-400">{item.desc}</p>
                         </div>
                         <button
-                          onClick={() => toggleNotification(item.id)}
+                          onClick={() => togglePreference(item.id)}
                           className={`relative flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                            notifications[item.id] ? 'bg-red-600' : 'bg-slate-300 dark:bg-gray-700'
+                            preferences[item.id] ? 'bg-red-600' : 'bg-slate-300 dark:bg-gray-700'
                           }`}
                         >
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-                            notifications[item.id] ? 'translate-x-6' : 'translate-x-1'
+                            preferences[item.id] ? 'translate-x-6' : 'translate-x-1'
                           }`} />
                         </button>
                       </div>
@@ -236,6 +263,12 @@ export default function Settings() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 dark:border-red-900/30 dark:bg-red-900/10 mt-8">
+                  <h3 className="text-lg font-bold text-red-900 dark:text-red-400">Global Logout</h3>
+                  <p className="text-sm text-red-700/70 dark:text-red-400/70">Sign out from all active sessions across all devices immediately.</p>
+                  <button onClick={handleLogoutAll} className="mt-4 rounded-xl bg-red-600 px-6 py-2 text-sm font-bold text-white transition hover:bg-red-700">Logout All Devices</button>
                 </div>
 
                 <div className="rounded-3xl border border-red-100 bg-red-50/50 p-6 dark:border-red-900/30 dark:bg-red-900/10">

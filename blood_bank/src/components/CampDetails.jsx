@@ -65,9 +65,19 @@ export default function CampDetails() {
   }
 
   const openExternalMap = (type) => {
-    if (!camp?.latitude || !camp?.longitude) return
+    let q = '';
+    
+    if (camp?.coordinates?.coordinates && camp.coordinates.coordinates.length === 2 && camp.coordinates.coordinates[0] !== 0) {
+      q = `${camp.coordinates.coordinates[1]},${camp.coordinates.coordinates[0]}`; // GeoJSON is [lng, lat]
+    } else if (camp?.latitude && camp?.longitude && camp.latitude !== 0) {
+      q = `${camp.latitude},${camp.longitude}`;
+    } else if (camp?.location) {
+      q = encodeURIComponent(camp.location);
+    } else {
+      toast.error('Location unavailable');
+      return;
+    }
 
-    const q = `${camp.latitude},${camp.longitude}`
     const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${q}`
     const appleUrl = `https://maps.apple.com/?daddr=${q}`
 

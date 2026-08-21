@@ -14,6 +14,8 @@ const initialState = {
   location: ''
 };
 
+const BLOOD_GROUPS = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
+
 const RegisterUser = () => {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
@@ -25,10 +27,33 @@ const RegisterUser = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.password || !form.location.trim()) {
+      toast.error('Please fill in all required fields before submitting.');
+      return;
+    }
+
+    if (form.role === 'donor' && !form.bloodGroup) {
+      toast.error('Please select a blood group for donor accounts.');
+      return;
+    }
+
     setLoading(true);
     const loadingToast = toast.loading('Registering member...');
     try {
-      const res = await registerUser(form);
+      const payload = {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+      };
+
+      if (form.role !== 'donor') {
+        delete payload.bloodGroup;
+      }
+
+      const res = await registerUser(payload);
       toast.success(res.message || 'New user registered successfully!', { id: loadingToast });
       setTimeout(() => navigate('/user-list'), 1500);
     } catch (err) {
@@ -121,19 +146,21 @@ const RegisterUser = () => {
                   <option value="admin">System Admin</option>
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-gray-300">Blood Group</label>
-                <select 
-                  name="bloodGroup" 
-                  value={form.bloodGroup} 
-                  onChange={handleChange} 
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/5 dark:border-gray-800 dark:bg-gray-800/50"
-                  required
-                >
-                  <option value="">Select Group</option>
-                  {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(g => <option key={g} value={g}>{g}</option>)}
-                </select>
-              </div>
+              {form.role === 'donor' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-gray-300">Blood Group</label>
+                  <select 
+                    name="bloodGroup" 
+                    value={form.bloodGroup} 
+                    onChange={handleChange} 
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/5 dark:border-gray-800 dark:bg-gray-800/50"
+                    required
+                  >
+                    <option value="">Select Group</option>
+                    {BLOOD_GROUPS.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

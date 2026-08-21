@@ -68,14 +68,14 @@ const MapScreen = () => {
         showsUserLocation={true}
       >
         {hospitals.map((hospital, index) => {
-          let coords = { latitude: 20.5937 + (Math.random()*0.1), longitude: 78.9629 + (Math.random()*0.1) };
-
-          if (hospital.coordinates && hospital.coordinates.coordinates && hospital.coordinates.coordinates.length === 2) {
-            coords = {
-              latitude: hospital.coordinates.coordinates[1],
-              longitude: hospital.coordinates.coordinates[0]
-            };
+          if (!hospital.coordinates || !hospital.coordinates.coordinates || hospital.coordinates.coordinates.length !== 2) {
+            return null; // Do not render fake markers
           }
+          
+          let coords = {
+            latitude: hospital.coordinates.coordinates[1],
+            longitude: hospital.coordinates.coordinates[0]
+          };
 
           return (
             <Marker

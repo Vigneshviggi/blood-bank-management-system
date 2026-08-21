@@ -5,6 +5,7 @@ import ScreenContainer from '../../components/ScreenContainer';
 import GlassCard from '../../components/ui/GlassCard';
 import { Colors, Radius, Typography } from '../../constants/Theme';
 import api from '../../services/api';
+import { getCurrentCoordinates } from '../../services/locationService';
 import RequestCard from '../../components/RequestCard';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,11 +21,28 @@ const HomeScreen = ({ navigation }) => {
 
   const fetchData = async () => {
     try {
+      let requestsPromise;
+      try {
+        const coords = await getCurrentCoordinates();
+        requestsPromise = api.get(`/requests/nearby?latitude=${coords.latitude}&longitude=${coords.longitude}&radius=25`);
+      } catch (locErr) {
+        // Fallback: without valid location, do not expose distant requests in nearby feed
+        requestsPromise = Promise.resolve({ data: { requests: [] } });
+      }
+
       const [requestsRes, statsRes] = await Promise.all([
-        api.get('/requests?limit=3'),
+        requestsPromise,
         api.get('/users/stats'),
       ]);
-      setRecentRequests(Array.isArray(requestsRes.data) ? requestsRes.data : requestsRes.data?.data || []);
+
+      const nearbyList = Array.isArray(requestsRes.data?.requests)
+        ? requestsRes.data.requests
+        : Array.isArray(requestsRes.data)
+        ? requestsRes.data
+        : [];
+
+      setRecentRequests(nearbyList.slice(0, 3));
+
       const payload = statsRes.data?.stats || statsRes.data || {};
       setStats({
         donations: payload.donations ?? 0,
@@ -42,7 +60,7 @@ const HomeScreen = ({ navigation }) => {
     <View style={styles.header}>
       <View>
         <Text style={styles.welcomeText}>Welcome back,</Text>
-        <Text style={styles.nameText}>{user?.name || 'Hero'}</Text>
+        <Text style={styles.nameText}>{user?.name || 'Loading...'}</Text>
       </View>
       <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.85}>
         <View style={styles.profileBadge}>
@@ -110,6 +128,12 @@ const HomeScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.quickActions}>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('DonorsScreen')} activeOpacity={0.85}>
+          <View style={[styles.actionIcon, { backgroundColor: Colors.primarySoft }]}>
+            <Ionicons name="people" size={22} color={Colors.primary} />
+          </View>
+          <Text style={styles.actionLabel}>Find Donors</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Camps')} activeOpacity={0.85}>
           <View style={[styles.actionIcon, { backgroundColor: Colors.secondarySoft }]}>
             <Ionicons name="megaphone" size={22} color={Colors.secondaryDark} />
@@ -117,8 +141,8 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.actionLabel}>Find Camps</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Profile')} activeOpacity={0.85}>
-          <View style={[styles.actionIcon, { backgroundColor: Colors.primarySoft }]}>
-            <Ionicons name="medkit" size={22} color={Colors.primary} />
+          <View style={[styles.actionIcon, { backgroundColor: '#E0F2FE' }]}>
+            <Ionicons name="medkit" size={22} color="#0284C7" />
           </View>
           <Text style={styles.actionLabel}>Donate Info</Text>
         </TouchableOpacity>

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../constants/Theme';
 
 const BLOOD_GROUPS = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 
@@ -49,15 +50,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   labelError: {
-    color: '#C81E4A',
+    color: Colors.error,
   },
   grid: {
     flexDirection: 'row',
@@ -66,33 +67,34 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '22%',
-    marginHorizontal: '1.5%', // 4 items per row, spacing between them
-    backgroundColor: '#1D1B20',
-    paddingVertical: 14,
-    borderRadius: 12,
+    minHeight: 44,
+    marginHorizontal: '1.5%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   buttonActive: {
-    backgroundColor: 'rgba(229, 57, 53, 0.1)',
-    borderColor: '#C81E4A',
+    backgroundColor: '#FDE7ED',
+    borderColor: Colors.primary,
+    borderWidth: 2,
   },
   buttonError: {
     borderColor: 'rgba(255, 82, 82, 0.5)',
   },
   text: {
-    color: '#A79FA8',
+    color: Colors.text,
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
   textActive: {
-    color: '#C81E4A',
+    color: Colors.primary,
   },
   errorText: {
-    color: '#C81E4A',
+    color: Colors.error,
     fontSize: 12,
     marginTop: 4,
     fontWeight: '500',

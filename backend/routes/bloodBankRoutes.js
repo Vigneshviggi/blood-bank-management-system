@@ -6,6 +6,8 @@ const Request = require('../models/Request');
 const Donation = require('../models/Donation');
 const User = require('../models/User');
 const { verifyToken, authorizeRoles } = require('../middleware/authMiddleware');
+const { calculateNextDonationDate } = require('../utils/registrationHelpers');
+const crypto = require('crypto');
 
 // Get all blood banks (Public/Protected)
 router.get('/', async (req, res) => {
@@ -25,10 +27,13 @@ router.get('/profile', verifyToken, authorizeRoles('blood_bank', 'admin', 'super
       bloodBank = await BloodBank.findById(req.user.bloodBankId);
     }
     if (!bloodBank) {
-      // Create a default profile if missing
+      if (!req.user.licenseNumber) {
+        return res.status(400).json({ error: "License number is required to create a blood bank profile." });
+      }
+      
       bloodBank = new BloodBank({
         name: req.user.name + ' Blood Bank',
-        licenseNumber: req.user.licenseNumber || 'BB-' + Math.floor(100000 + Math.random() * 900000),
+        licenseNumber: req.user.licenseNumber,
         address: req.user.location || 'Central City',
         phone: req.user.phone || '0000000000',
         email: req.user.email,
@@ -161,7 +166,7 @@ router.post('/inventory', verifyToken, authorizeRoles('blood_bank', 'admin', 'su
 
     const { bloodGroup, units, component, collectionDate, expiryDate, batchNumber, donorId, donorName } = req.body;
 
-    const batch = batchNumber || 'BATCH-' + Math.floor(100000 + Math.random() * 900000);
+    const batch = batchNumber || 'BATCH-' + Date.now() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
     const barcode = 'BC-' + Date.now();
     const qrCode = JSON.stringify({ batch, bloodGroup, units, barcode, bankId });
 
@@ -298,7 +303,7 @@ router.post('/walk-in-donation', verifyToken, authorizeRoles('blood_bank', 'admi
     await donation.save();
 
     // Create inventory item automatically
-    const batch = 'BATCH-' + Math.floor(100000 + Math.random() * 900000);
+    const batch = 'BATCH-' + Date.now() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
     const barcode = 'BC-' + Date.now();
     const inventoryItem = new Inventory({
       bloodBank: bankId,
@@ -315,8 +320,14 @@ router.post('/walk-in-donation', verifyToken, authorizeRoles('blood_bank', 'admi
     });
     await inventoryItem.save();
 
-    // Update donor gamification count
-    await User.findByIdAndUpdate(donor._id, { $inc: { donationsCount: 1, points: 100 } });
+    // Update donor gamification count and donation schedule
+    await User.findByIdAndUpdate(donor._id, {
+      $inc: { donationsCount: 1, points: 100 },
+      $set: {
+        lastDonationDate: new Date(),
+        nextDonationDate: new Date(calculateNextDonationDate(new Date(), donor.medicalDonationGapDays || 90))
+      }
+    });
 
     res.status(201).json({
       success: true,

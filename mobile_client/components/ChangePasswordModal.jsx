@@ -86,21 +86,21 @@ export default function ChangePasswordModal({ visible, onClose }) {
             label="Current Password"
             value={currentPassword}
             onChangeText={setCurrentPassword}
-            secureTextEntry
+            isPassword
           />
 
           <Input 
             label="New Password"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry
+            isPassword
           />
 
           <Input 
             label="Confirm New Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            isPassword
           />
 
           <Button 

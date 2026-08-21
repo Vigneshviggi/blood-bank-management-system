@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from localStorage on init
+  // Load user from localStorage on init and sync fresh profile
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
@@ -18,6 +18,16 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+
+      // Fetch fresh profile from backend
+      axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile`)
+        .then((res) => {
+          if (res.data?.success && res.data.user) {
+            setUser(res.data.user);
+            localStorage.setItem('user', JSON.stringify(res.data.user));
+          }
+        })
+        .catch(() => {});
     }
     setLoading(false);
   }, []);
@@ -57,6 +67,16 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const logoutAll = async () => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/logout-all`);
+    } catch (e) {
+      console.error('Logout all failed', e);
+    } finally {
+      logout();
+    }
+  };
+
   const updateProfile = (updatedUser) => {
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -69,6 +89,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    logoutAll,
     updateProfile
   };
 

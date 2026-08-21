@@ -16,6 +16,8 @@ const DEFAULT_STATE = {
   hospitalName: '',
   patientCondition: '',
   location: '',
+  latitude: '',
+  longitude: '',
   contactInfo: '',
 };
 
@@ -122,6 +124,24 @@ export const useBloodRequestForm = (navigation) => {
       contactInfo: formData.contactInfo,
       reason: formData.patientCondition,
     };
+
+    if (
+      formData.latitude !== '' &&
+      formData.longitude !== '' &&
+      !isNaN(Number(formData.latitude)) &&
+      !isNaN(Number(formData.longitude))
+    ) {
+      const lat = Number(formData.latitude);
+      const lng = Number(formData.longitude);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0)) {
+        requestPayload.latitude = lat;
+        requestPayload.longitude = lng;
+        requestPayload.coordinates = {
+          type: 'Point',
+          coordinates: [lng, lat]
+        };
+      }
+    }
 
     try {
       await api.post('/requests', requestPayload);

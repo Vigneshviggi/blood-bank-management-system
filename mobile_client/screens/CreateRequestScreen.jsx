@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { AuthContext } from '../context/AuthContext';
-import ScreenContainer from '../components/ScreenContainer';
-import GlassCard from '../components/ui/GlassCard';
+import ScreenHeader from '../components/ScreenHeader';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
-import { ChevronLeft, Send, CheckCircle2, ChevronDown, X, Calendar as CalendarIcon } from 'lucide-react-native';
+import { Send, CheckCircle2, ChevronDown, X, Calendar as CalendarIcon, MapPin } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
@@ -20,7 +19,7 @@ const CreateRequestScreen = ({ navigation }) => {
   
   const [formData, setFormData] = useState({
     patientName: user?.name || '',
-    bloodGroup: 'O+',
+    bloodGroup: '',
     unitsNeeded: '1',
     emergencyLevel: 'Normal',
     patientCondition: '',
@@ -37,67 +36,81 @@ const CreateRequestScreen = ({ navigation }) => {
   const [hospitals, setHospitals] = useState([]);
   const [showHospitalPicker, setShowHospitalPicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   
-  // DateTimePicker states
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
-    const fetchHospitals = async () => {
+    const fetchTargets = async () => {
       try {
-        const res = await api.get('/hospitals');
-        setHospitals(res.data);
+        if (scenario === 'hospital_to_medical_unit') {
+          const res = await api.get('/blood-bank');
+          setHospitals(res.data);
+        } else {
+          const res = await api.get('/hospitals');
+          setHospitals(res.data);
+        }
       } catch (err) {
-        console.error("Failed to fetch hospitals", err);
+        console.error("Failed to fetch targets", err);
       }
     };
-    fetchHospitals();
-  }, []);
+    fetchTargets();
+  }, [scenario]);
 
   const handleScenarioChange = (newScenario) => {
     setScenario(newScenario);
     if (newScenario === 'hospital_to_person') {
       setFormData(prev => ({ ...prev, hospitalId: user?.hospitalId || '' }));
-    } else if (newScenario === 'hospital_to_hospital') {
-      setFormData(prev => ({ ...prev, hospitalId: '' }));
-    } else if (newScenario === 'person_to_hospital') {
-      setFormData(prev => ({ ...prev, hospitalId: '' }));
-    } else if (newScenario === 'person_to_person') {
+    } else {
       setFormData(prev => ({ ...prev, hospitalId: '' }));
     }
   };
 
   const captureLocation = async () => {
+    setGpsLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Location permission denied', 'Enable location access to share the emergency site.');
+        Alert.alert('Permission Denied', 'Location permission was denied. You can enter the pickup address manually.');
+        setGpsLoading(false);
         return;
       }
 
       const loc = await Location.getCurrentPositionAsync({});
+      let readableAddress = 'Current device location';
+      try {
+        const geocode = await Location.reverseGeocodeAsync({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+        if (geocode && geocode.length > 0) {
+          const addr = geocode[0];
+          readableAddress = [addr.city || addr.subregion, addr.region || addr.country].filter(Boolean).join(', ');
+        }
+      } catch (geoErr) {
+        console.log("Reverse geocode failed", geoErr);
+      }
+
       setFormData((prev) => ({
         ...prev,
         latitude: String(loc.coords.latitude),
         longitude: String(loc.coords.longitude),
-        location: prev.location || 'Current device location'
+        location: readableAddress
       }));
-      Alert.alert('Location captured', 'Current device location has been attached to the request.');
     } catch (err) {
       console.log('Unable to fetch location', err);
-      Alert.alert(
-        'Location Unavailable', 
-        'Please ensure GPS is enabled on your device. You can also manually type your location.'
-      );
+      Alert.alert('Error', 'Unable to determine your location. Please enter the address manually.');
+    } finally {
+      setGpsLoading(false);
     }
   };
 
   const handleSubmit = async () => {
-    if (!formData.bloodGroup || !formData.unitsNeeded) {
-      Alert.alert('Error', 'Please fill in blood group and units.');
-      return;
-    }
+    // Validation
+    if (!formData.bloodGroup) return Alert.alert('Validation Error', 'Please select a blood group.');
+    if (!formData.unitsNeeded || Number(formData.unitsNeeded) < 1) return Alert.alert('Validation Error', 'Please select at least 1 unit.');
+    if (!formData.patientCondition.trim()) return Alert.alert('Validation Error', 'Please enter the patient condition.');
+    if (!formData.location.trim()) return Alert.alert('Validation Error', 'Please enter the pickup location.');
+    if (!formData.contactNumber.trim() || formData.contactNumber.length < 5) return Alert.alert('Validation Error', 'Please enter a valid contact number.');
 
     setLoading(true);
     try {
@@ -107,6 +120,8 @@ const CreateRequestScreen = ({ navigation }) => {
 
       if (scenario === 'hospital_to_hospital' || scenario === 'person_to_hospital') {
         targetType = 'hospital';
+      } else if (scenario === 'hospital_to_medical_unit') {
+        targetType = 'blood_bank';
       }
 
       const payload = {
@@ -114,48 +129,66 @@ const CreateRequestScreen = ({ navigation }) => {
         requesterId: user?._id || user?.id,
         requesterTypeModel,
         targetType,
-        patientName: formData.patientName,
+        patientName: formData.patientName || 'Blood Request',
         bloodGroup: formData.bloodGroup,
         unitsNeeded: Number(formData.unitsNeeded),
         emergencyLevel: formData.emergencyLevel,
         patientCondition: formData.patientCondition,
         hospitalId: formData.hospitalId || null,
         location: formData.location,
-        latitude: Number(formData.latitude || 0),
-        longitude: Number(formData.longitude || 0),
         requiredBefore: formData.requiredBefore || undefined,
         contactNumber: formData.contactNumber,
-        contactInfo: formData.contactNumber || formData.contactInfo,
+        contactInfo: formData.contactNumber,
         reason: formData.reason,
       };
+
+      if (
+        formData.latitude !== '' &&
+        formData.longitude !== '' &&
+        !isNaN(Number(formData.latitude)) &&
+        !isNaN(Number(formData.longitude))
+      ) {
+        const lat = Number(formData.latitude);
+        const lng = Number(formData.longitude);
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0)) {
+          payload.latitude = lat;
+          payload.longitude = lng;
+          payload.coordinates = {
+            type: 'Point',
+            coordinates: [lng, lat]
+          };
+        }
+      }
 
       await api.post('/requests', payload);
       Alert.alert('Success', 'Blood request created successfully!');
       navigation.goBack();
     } catch (err) {
       console.error('Error creating request', err);
-      Alert.alert('Error', 'Failed to create request. Please try again.');
+      const msg = err.response?.data?.message || 'Failed to submit request. Please try again later.';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }
   };
 
   const getSelectedHospitalName = () => {
-    if (!formData.hospitalId) return 'Any Available Hospital';
+    const defaultText = scenario === 'hospital_to_medical_unit' ? 'Any Available Medical Unit' : 'Any Available Hospital';
+    if (!formData.hospitalId) return defaultText;
     const h = hospitals.find(h => h._id === formData.hospitalId);
-    return h ? h.name : 'Any Available Hospital';
+    return h ? h.name : defaultText;
   };
 
   const handleDateChange = (event, date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === 'android') setShowDatePicker(false);
     if (date) {
       setSelectedDate(date);
-      setShowTimePicker(true); // show time picker immediately after date
+      if (Platform.OS === 'android') setShowTimePicker(true);
     }
   };
 
   const handleTimeChange = (event, time) => {
-    setShowTimePicker(false);
+    if (Platform.OS === 'android') setShowTimePicker(false);
     if (time) {
       const finalDate = new Date(selectedDate);
       finalDate.setHours(time.getHours());
@@ -173,226 +206,230 @@ const CreateRequestScreen = ({ navigation }) => {
   };
 
   return (
-    <ScreenContainer>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <ChevronLeft size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Blood Requests</Text>
-          <Text style={styles.subtitle}>Create urgent requirements</Text>
-        </View>
-      </View>
-
-      <View style={styles.scrollContent}>
-        
-        {/* SCENARIOS */}
-        <View style={styles.scenarioGrid}>
-          {user?.role === 'hospital' ? (
-            <>
-              <ScenarioCard 
-                title="Hospital → Person" 
-                desc="Emergency donor request" 
-                active={scenario === 'hospital_to_person'} 
-                onPress={() => handleScenarioChange('hospital_to_person')}
-              />
-              <ScenarioCard 
-                title="Hospital → Hospital" 
-                desc="Unit transfer request" 
-                active={scenario === 'hospital_to_hospital'} 
-                onPress={() => handleScenarioChange('hospital_to_hospital')}
-              />
-            </>
-          ) : (
-            <>
-              <ScenarioCard 
-                title="Person → Hospital" 
-                desc="Search unit availability" 
-                active={scenario === 'person_to_hospital'} 
-                onPress={() => handleScenarioChange('person_to_hospital')}
-              />
-              <ScenarioCard 
-                title="Person → Person" 
-                desc="Direct donor request" 
-                active={scenario === 'person_to_person'} 
-                onPress={() => handleScenarioChange('person_to_person')}
-              />
-            </>
-          )}
-        </View>
-
-        <GlassCard style={styles.card}>
-          <Text style={styles.label}>{user?.role === 'hospital' ? 'Hospital Name / Patient Name' : 'Patient Name'}</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.patientName}
-            onChangeText={(text) => setFormData({ ...formData, patientName: text })}
-            placeholder={user?.role === 'hospital' ? "Enter hospital or patient name" : "Enter patient name"}
-          />
-
-          {/* Blood Group */}
-          <Text style={styles.label}>Blood Group Needed *</Text>
-          <View style={styles.groupContainer}>
-            {bloodGroups.map(group => (
-              <TouchableOpacity 
-                key={group}
-                style={[styles.groupChip, formData.bloodGroup === group && styles.activeChip]}
-                onPress={() => setFormData({...formData, bloodGroup: group})}
-              >
-                <Text style={[styles.chipText, formData.bloodGroup === group && styles.activeChipText]}>
-                  {group}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Units Required */}
-          <Text style={styles.label}>Units Required *</Text>
-          <View style={styles.unitsContainer}>
-            <TouchableOpacity 
-              style={styles.unitBtn}
-              onPress={() => setFormData(p => ({...p, unitsNeeded: String(Math.max(1, Number(p.unitsNeeded) - 1))}))}
-            >
-              <Text style={styles.unitBtnText}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.unitValue}>{formData.unitsNeeded}</Text>
-            <TouchableOpacity 
-              style={styles.unitBtn}
-              onPress={() => setFormData(p => ({...p, unitsNeeded: String(Number(p.unitsNeeded) + 1)}))}
-            >
-              <Text style={styles.unitBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Priority Level */}
-          <Text style={styles.label}>Priority Level</Text>
-          <View style={styles.priorityContainer}>
-            {priorityLevels.map(level => (
-              <TouchableOpacity 
-                key={level}
-                style={[
-                  styles.priorityBtn, 
-                  formData.emergencyLevel === level && styles.activePriorityBtn,
-                  formData.emergencyLevel === level && level === 'Critical' && {backgroundColor: '#8F1338'},
-                  formData.emergencyLevel === level && level === 'High' && {backgroundColor: '#DC7609'}
-                ]}
-                onPress={() => setFormData({...formData, emergencyLevel: level})}
-              >
-                <Text style={[styles.priorityText, formData.emergencyLevel === level && styles.activePriorityText]}>
-                  {level.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.label}>Location</Text>
-          <View style={styles.locationRow}>
-            <TextInput
-              style={[styles.input, { flex: 1 }]}
-              value={formData.location}
-              onChangeText={(text) => setFormData({ ...formData, location: text })}
-              placeholder="Hospital or pickup location"
-            />
-            <TouchableOpacity style={styles.locateBtn} onPress={captureLocation}>
-              <Text style={styles.locateBtnText}>GPS</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.label}>Contact Number</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.contactNumber}
-            onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
-            placeholder="Emergency contact number"
-            keyboardType="phone-pad"
-          />
-
-          <Text style={styles.label}>Required Before</Text>
-          <TouchableOpacity 
-            style={[styles.input, {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}]}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={[styles.inputText, !formData.requiredBefore && {color: Colors.textSecondary}]}>
-              {formData.requiredBefore || 'Select Date & Time'}
-            </Text>
-            <CalendarIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-              minimumDate={new Date()}
-            />
-          )}
-
-          {showTimePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="time"
-              display="default"
-              onChange={handleTimeChange}
-            />
-          )}
-
-          {/* Target Hospital (If applicable) */}
-          {scenario.includes('to_hospital') && (
-            <View>
-              <Text style={styles.label}>Select Target Hospital</Text>
-              <TouchableOpacity style={styles.dropdown} onPress={() => setShowHospitalPicker(true)}>
-                <Text style={styles.dropdownText}>{getSelectedHospitalName()}</Text>
-                <ChevronDown size={20} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Patient Condition */}
-          <Text style={styles.label}>{user?.role === 'hospital' ? 'Reason / Condition' : 'Patient Condition'}</Text>
-          <TextInput 
-            style={styles.input}
-            placeholder={user?.role === 'hospital' ? "e.g. Critical Surgery, Stock Shortage" : "e.g. Critical Surgery, Accident"}
-            value={formData.patientCondition}
-            onChangeText={(val) => setFormData({...formData, patientCondition: val})}
-          />
-
-          {/* Reason */}
-          <Text style={styles.label}>Additional Details</Text>
-          <TextInput 
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the urgency or specific requirements..."
-            multiline
-            numberOfLines={4}
-            value={formData.reason}
-            onChangeText={(val) => setFormData({...formData, reason: val})}
-          />
-
-          {/* Submit */}
-          <TouchableOpacity 
-            style={[styles.submitBtn, loading && styles.disabledBtn]} 
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
+    <View style={styles.container}>
+      <ScreenHeader title="Blood Request" subtitle="Urgent Request Form" />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.keyboardAvoid}
+      >
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* SCENARIOS */}
+          <View style={styles.scenarioGrid}>
+            {user?.role === 'hospital' ? (
+              <>
+                <ScenarioCard title="Hospital → Person" active={scenario === 'hospital_to_person'} onPress={() => handleScenarioChange('hospital_to_person')} />
+                <ScenarioCard title="Hospital → Hospital" active={scenario === 'hospital_to_hospital'} onPress={() => handleScenarioChange('hospital_to_hospital')} />
+                <ScenarioCard title="Hospital → Medical Unit" active={scenario === 'hospital_to_medical_unit'} onPress={() => handleScenarioChange('hospital_to_medical_unit')} />
+              </>
             ) : (
               <>
-                <Send size={20} color="#fff" />
-                <Text style={styles.submitBtnText}>Submit {scenario.replace(/_/g, ' ').toUpperCase()}</Text>
+                <ScenarioCard title="Person → Hospital" active={scenario === 'person_to_hospital'} onPress={() => handleScenarioChange('person_to_hospital')} />
+                <ScenarioCard title="Person → Person" active={scenario === 'person_to_person'} onPress={() => handleScenarioChange('person_to_person')} />
               </>
             )}
-          </TouchableOpacity>
-        </GlassCard>
-      </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.label}>{user?.role === 'hospital' ? 'Hospital Name / Patient Name' : 'Patient Name'}</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.patientName}
+              onChangeText={(text) => setFormData({ ...formData, patientName: text })}
+              placeholder={user?.role === 'hospital' ? "Enter hospital or patient name" : "Enter patient name"}
+            />
+
+            {/* Blood Group */}
+            <Text style={styles.label}>Blood Group Needed *</Text>
+            <View style={styles.groupContainer}>
+              {bloodGroups.map(group => (
+                <TouchableOpacity 
+                  key={group}
+                  style={[styles.groupChip, formData.bloodGroup === group && styles.activeChip]}
+                  onPress={() => setFormData({...formData, bloodGroup: group})}
+                  accessibilityLabel={`Select ${group}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.chipText, formData.bloodGroup === group && styles.activeChipText]}>
+                    {group}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Units Required */}
+            <Text style={styles.label}>Units Required *</Text>
+            <View style={styles.unitsContainer}>
+              <TouchableOpacity 
+                style={[styles.unitBtn, Number(formData.unitsNeeded) <= 1 && styles.disabledUnitBtn]}
+                onPress={() => setFormData(p => ({...p, unitsNeeded: String(Math.max(1, Number(p.unitsNeeded) - 1))}))}
+                disabled={Number(formData.unitsNeeded) <= 1}
+                accessibilityLabel="Decrease units"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.unitBtnText, Number(formData.unitsNeeded) <= 1 && styles.disabledUnitText]}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.unitValue}>{formData.unitsNeeded}</Text>
+              <TouchableOpacity 
+                style={styles.unitBtn}
+                onPress={() => setFormData(p => ({...p, unitsNeeded: String(Number(p.unitsNeeded) + 1)}))}
+                accessibilityLabel="Increase units"
+                accessibilityRole="button"
+              >
+                <Text style={styles.unitBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Priority Level */}
+            <Text style={styles.label}>Priority Level</Text>
+            <View style={styles.priorityContainer}>
+              {priorityLevels.map(level => {
+                const isActive = formData.emergencyLevel === level;
+                let activeStyle = {};
+                if (isActive) {
+                  if (level === 'High') activeStyle = { backgroundColor: '#F59E0B', borderColor: '#F59E0B' };
+                  else if (level === 'Critical') activeStyle = { backgroundColor: Colors.error, borderColor: Colors.error };
+                  else activeStyle = { backgroundColor: Colors.textSecondary, borderColor: Colors.textSecondary };
+                }
+                return (
+                  <TouchableOpacity 
+                    key={level}
+                    style={[styles.priorityBtn, isActive && activeStyle]}
+                    onPress={() => setFormData({...formData, emergencyLevel: level})}
+                  >
+                    <Text style={[styles.priorityText, isActive && styles.activePriorityText]}>
+                      {level.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.label}>Location / Pickup Address *</Text>
+            <View style={styles.locationRow}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                value={formData.location}
+                onChangeText={(text) => setFormData({ ...formData, location: text })}
+                placeholder="Enter pickup location"
+              />
+              <TouchableOpacity 
+                style={styles.gpsBtn} 
+                onPress={captureLocation}
+                disabled={gpsLoading}
+                accessibilityLabel="Use current location"
+                accessibilityRole="button"
+              >
+                {gpsLoading ? <ActivityIndicator color={Colors.primary} size="small" /> : <MapPin size={20} color={Colors.primary} />}
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.label}>Contact Number *</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.contactNumber}
+              onChangeText={(text) => setFormData({ ...formData, contactNumber: text.replace(/[^0-9+() -]/g, '') })}
+              placeholder="Emergency contact number"
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.label}>Required Before (Optional)</Text>
+            <TouchableOpacity 
+              style={[styles.input, {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[styles.inputText, !formData.requiredBefore && {color: Colors.textSecondary}]}>
+                {formData.requiredBefore || 'Select Date & Time'}
+              </Text>
+              <CalendarIcon size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+
+            {showDatePicker && Platform.OS !== 'web' && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+                minimumDate={new Date()}
+              />
+            )}
+
+            {showTimePicker && Platform.OS !== 'web' && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="time"
+                display="default"
+                onChange={handleTimeChange}
+              />
+            )}
+            
+            {/* Target Hospital (If applicable) */}
+            {(scenario.includes('to_hospital') || scenario === 'hospital_to_medical_unit') && (
+              <View>
+                <Text style={styles.label}>{scenario === 'hospital_to_medical_unit' ? 'Select Target Medical Unit' : 'Select Target Hospital'}</Text>
+                <TouchableOpacity style={styles.dropdown} onPress={() => setShowHospitalPicker(true)}>
+                  <Text style={styles.dropdownText} numberOfLines={1}>{getSelectedHospitalName()}</Text>
+                  <ChevronDown size={20} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>{user?.role === 'hospital' ? 'Reason / Condition *' : 'Patient Condition *'}</Text>
+              <Text style={styles.charCount}>{formData.patientCondition.length}/100</Text>
+            </View>
+            <TextInput 
+              style={styles.input}
+              placeholder={user?.role === 'hospital' ? "e.g. Critical Surgery" : "e.g. Critical Surgery, Accident"}
+              value={formData.patientCondition}
+              onChangeText={(val) => { if(val.length <= 100) setFormData({...formData, patientCondition: val}) }}
+            />
+
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Additional Details</Text>
+              <Text style={styles.charCount}>{formData.reason.length}/150</Text>
+            </View>
+            <TextInput 
+              style={[styles.input, styles.textArea]}
+              placeholder="Describe the urgency or specific requirements..."
+              multiline
+              numberOfLines={4}
+              value={formData.reason}
+              onChangeText={(val) => { if(val.length <= 150) setFormData({...formData, reason: val}) }}
+            />
+
+            {/* Submit */}
+            <TouchableOpacity 
+              style={[styles.submitBtn, loading && styles.disabledBtn]} 
+              onPress={handleSubmit}
+              disabled={loading}
+              accessibilityLabel="Submit blood request"
+              accessibilityRole="button"
+            >
+              {loading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator color="#fff" size="small" />
+                  <Text style={styles.submitBtnText}>SUBMITTING REQUEST...</Text>
+                </View>
+              ) : (
+                <Text style={styles.submitBtnText}>SUBMIT REQUEST</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Hospital Picker Modal */}
       <Modal visible={showHospitalPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Hospital</Text>
-              <TouchableOpacity onPress={() => setShowHospitalPicker(false)}>
+              <Text style={styles.modalTitle}>{scenario === 'hospital_to_medical_unit' ? 'Select Medical Unit' : 'Select Hospital'}</Text>
+              <TouchableOpacity onPress={() => setShowHospitalPicker(false)} style={{padding: 8}}>
                 <X size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -401,8 +438,8 @@ const CreateRequestScreen = ({ navigation }) => {
                 style={styles.modalItem}
                 onPress={() => { setFormData({...formData, hospitalId: ''}); setShowHospitalPicker(false); }}
               >
-                <Text style={styles.modalItemText}>Any Available Hospital</Text>
-                {!formData.hospitalId && <CheckCircle2 size={20} color={Colors.primary} />}
+                <Text style={styles.modalItemText}>Any Available {scenario === 'hospital_to_medical_unit' ? 'Medical Unit' : 'Hospital'}</Text>
+                {!formData.hospitalId && <CheckCircle2 size={20} color={Colors.success} />}
               </TouchableOpacity>
               {hospitals.map(h => (
                 <TouchableOpacity 
@@ -411,7 +448,7 @@ const CreateRequestScreen = ({ navigation }) => {
                   onPress={() => { setFormData({...formData, hospitalId: h._id}); setShowHospitalPicker(false); }}
                 >
                   <Text style={styles.modalItemText}>{h.name}</Text>
-                  {formData.hospitalId === h._id && <CheckCircle2 size={20} color={Colors.primary} />}
+                  {formData.hospitalId === h._id && <CheckCircle2 size={20} color={Colors.success} />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -419,112 +456,86 @@ const CreateRequestScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-    </ScreenContainer>
+    </View>
   );
 };
 
-const ScenarioCard = ({ title, desc, active, onPress }) => (
+const ScenarioCard = ({ title, active, onPress }) => (
   <TouchableOpacity 
     style={[styles.scenarioCard, active && styles.scenarioCardActive]} 
     onPress={onPress}
   >
-    <View style={[styles.scenarioIconBox, active && styles.scenarioIconBoxActive]}>
-      <Text style={[styles.scenarioIcon, active && styles.scenarioIconActive]}>→</Text>
-    </View>
-    <View style={{flex: 1}}>
-      <Text style={[styles.scenarioTitle, active && styles.scenarioTitleActive]}>{title}</Text>
-      <Text style={styles.scenarioDesc}>{desc}</Text>
-    </View>
+    <Text style={[styles.scenarioTitle, active && styles.scenarioTitleActive]}>{title}</Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  backBtn: {
-    padding: 8,
-    marginRight: 12,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+  keyboardAvoid: {
+    flex: 1,
   },
   scrollContent: {
+    padding: 16,
     paddingBottom: 40,
   },
   scenarioGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 12,
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 8,
   },
   scenarioCard: {
-    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#F0E4E4',
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   scenarioCardActive: {
     borderColor: Colors.primary,
     backgroundColor: '#FDE7ED',
   },
-  scenarioIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F4EEEC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  scenarioIconBoxActive: {
-    backgroundColor: Colors.primary,
-  },
-  scenarioIcon: {
-    fontSize: 18,
-    color: '#6E6771',
-    fontWeight: 'bold',
-  },
-  scenarioIconActive: {
-    color: '#fff',
-  },
   scenarioTitle: {
     fontSize: 12,
-    fontWeight: '800',
-    color: Colors.text,
-    textTransform: 'uppercase',
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   scenarioTitleActive: {
     color: Colors.primary,
-  },
-  scenarioDesc: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    marginTop: 2,
-    textTransform: 'uppercase',
+    fontWeight: '700',
   },
   card: {
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#101828',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  charCount: {
+    fontSize: 11,
+    color: Colors.textMuted,
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 10,
+    marginBottom: 8,
     marginTop: 20,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -535,23 +546,25 @@ const styles = StyleSheet.create({
     marginHorizontal: -4,
   },
   groupChip: {
-    width: '23%',
-    paddingVertical: 12,
-    backgroundColor: '#F4EEEC',
-    borderRadius: 12,
+    width: '22%',
+    minHeight: 44,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     margin: 4,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   activeChip: {
     backgroundColor: '#FDE7ED',
     borderColor: Colors.primary,
+    borderWidth: 2,
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: Colors.text,
   },
   activeChipText: {
     color: Colors.primary,
@@ -562,58 +575,69 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   unitBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#F4EEEC',
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#F7F8FA',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  disabledUnitBtn: {
+    backgroundColor: '#F0F0F0',
+    borderColor: '#E5E7EB',
   },
   unitBtnText: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '600',
     color: Colors.text,
   },
+  disabledUnitText: {
+    color: Colors.textMuted,
+  },
   unitValue: {
-    fontSize: 24,
-    fontWeight: '900',
+    fontSize: 22,
+    fontWeight: '700',
     color: Colors.text,
-    width: 40,
+    width: 32,
     textAlign: 'center',
   },
   priorityContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 8,
   },
   priorityBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: '#F4EEEC',
+    borderRadius: 8,
+    backgroundColor: '#F7F8FA',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  activePriorityBtn: {
-    backgroundColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   priorityText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.textSecondary,
     textTransform: 'uppercase',
   },
   activePriorityText: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
   input: {
-    backgroundColor: '#F4EEEC',
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 14,
     fontSize: 15,
     color: Colors.text,
-    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 48,
+  },
+  inputText: {
+    fontSize: 15,
+    color: Colors.text,
   },
   textArea: {
     height: 100,
@@ -623,51 +647,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F4EEEC',
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 48,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  locateBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  locateBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
+  gpsBtn: {
+    backgroundColor: '#FDE7ED',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 8,
+    height: 48,
+    width: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropdownText: {
+    flex: 1,
     fontSize: 15,
     color: Colors.text,
-    fontWeight: '500',
   },
   submitBtn: {
     backgroundColor: Colors.primary,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 18,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     marginTop: 32,
-    elevation: 4,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    minHeight: 56,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   submitBtnText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '800',
-    marginLeft: 10,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   disabledBtn: {
     opacity: 0.7,
@@ -688,11 +713,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '700',
     color: Colors.text,
   },
   modalItem: {
@@ -700,11 +725,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0E4E4',
+    borderBottomColor: Colors.border,
   },
   modalItemText: {
     fontSize: 16,
-    fontWeight: '600',
     color: Colors.text,
   },
 });

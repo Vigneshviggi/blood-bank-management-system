@@ -11,6 +11,31 @@ export const fetchDonors = async () => {
   }
 };
 
+export const fetchNearbyDonors = async (latitude, longitude, radius = 10, bloodGroup = 'All', availability = 'available') => {
+  try {
+    const params = { latitude, longitude, radius };
+    if (bloodGroup && bloodGroup !== 'All') {
+      params.bloodGroup = bloodGroup;
+    }
+    if (availability && availability !== 'All') {
+      params.availability = availability.toLowerCase();
+    }
+    const response = await axios.get(`${API_URL}/nearby`, { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: error.message };
+  }
+};
+
+export const contactDonor = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/${id}/contact`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { error: error.message };
+  }
+};
+
 export const fetchDonorById = async (id) => {
   try {
     const response = await axios.get(`${API_URL}/${id}`);

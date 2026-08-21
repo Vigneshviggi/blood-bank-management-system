@@ -8,15 +8,20 @@ import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 
 const ResetPasswordScreen = ({ navigation, route }) => {
-  const { email: initialEmail } = route.params || {};
+  const { email: initialEmail, otp: initialOtp } = route.params || {};
   const [email, setEmail] = useState(initialEmail || '');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(initialOtp || '');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
-    if (!otp || !newPassword) {
+    if (!email || !otp || !newPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -40,33 +45,28 @@ const ResetPasswordScreen = ({ navigation, route }) => {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.header}>
           <Text style={styles.title}>Reset Password</Text>
-          <Text style={styles.subtitle}>Enter the OTP and your new password.</Text>
+          <Text style={styles.subtitle}>
+            {initialOtp ? 'Please enter your new password below.' : 'Enter the OTP and your new password.'}
+          </Text>
         </View>
 
         <GlassCard>
-          <Input 
-            label="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <Input 
-            label="OTP Code"
-            placeholder="000000"
-            value={otp}
-            onChangeText={setOtp}
-            keyboardType="number-pad"
-            maxLength={6}
-          />
+          {/* Email and OTP are now handled in the background via route params */}
 
           <Input 
             label="New Password"
             placeholder="••••••••"
             value={newPassword}
             onChangeText={setNewPassword}
-            secureTextEntry
+            isPassword
+          />
+
+          <Input 
+            label="Confirm New Password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            isPassword
           />
 
           <Button 

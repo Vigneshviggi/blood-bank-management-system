@@ -1,37 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 
-const DashboardCard = ({ type, navigation, onPress }) => {
+const DashboardCard = ({ type, onPress }) => {
   // Render different cards based on type (emergency, hospitals, donationHistory, camps, inventory, analytics, etc.)
   let title = '';
   let description = '';
   let cta = '';
-  let target = null;
   switch (type) {
     case 'emergency':
       title = 'Nearby Emergency Requests';
       description = 'View and respond to urgent blood requests in your area.';
       cta = 'Donate Now';
-      target = 'Requests';
       break;
     case 'hospitals':
       title = 'Nearby Hospitals';
       description = 'Find hospitals and their blood inventory.';
       cta = 'Find Hospitals';
-      target = 'Home';
       break;
     case 'donationHistory':
       title = 'Donation History';
       description = 'Track your past blood donations and impact.';
       cta = 'View History';
-      target = 'RequestHistory';
       break;
     case 'camps':
       title = 'Upcoming Camps';
       description = 'Register for upcoming blood donation camps.';
       cta = 'Register';
-      target = 'Camps';
       break;
     case 'inventory':
       title = 'Blood Inventory';
@@ -68,74 +62,53 @@ const DashboardCard = ({ type, navigation, onPress }) => {
       description = '';
       cta = '';
   }
-  const handlePress = () => {
-    if (onPress) {
-      onPress(target || type);
-      return;
-    }
-
-    if (target && navigation) {
-      navigation.getParent?.()?.navigate?.(target) || navigation.navigate?.(target);
-    }
-  };
-
   return (
-    <View style={styles.card}>
-      <View style={styles.accentBar} />
-      <View style={styles.body}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
-        {cta ? (
-          <TouchableOpacity style={styles.ctaBtn} onPress={handlePress} activeOpacity={0.85}>
-            <Text style={styles.ctaText}>{cta}</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </View>
+    <TouchableOpacity activeOpacity={0.9} onPress={onPress} disabled={!onPress} style={styles.card}>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.description}>{description}</Text>
+      {cta ? (
+        <TouchableOpacity style={styles.ctaBtn} onPress={onPress} disabled={!onPress}>
+          <Text style={styles.ctaText}>{cta}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    marginBottom: 16,
-    overflow: 'hidden',
-    ...Shadows.soft,
-  },
-  accentBar: {
-    width: 6,
-    backgroundColor: Colors.primary,
-  },
-  body: {
-    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 20,
     padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: Colors.text,
-    marginBottom: 6,
-    fontFamily: Typography.heading,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#e53935',
+    marginBottom: 8,
   },
   description: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#555',
+    marginBottom: 12,
   },
   ctaBtn: {
-    backgroundColor: Colors.primarySoft,
-    borderRadius: Radius.sm,
-    paddingVertical: 10,
+    backgroundColor: '#e53935',
+    borderRadius: 12,
+    paddingVertical: 8,
     paddingHorizontal: 18,
     alignSelf: 'flex-start',
   },
   ctaText: {
-    color: Colors.primary,
-    fontWeight: '800',
-    fontSize: 13,
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
 

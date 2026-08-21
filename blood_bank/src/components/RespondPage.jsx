@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { fetchRequestById } from '../api/requestsApi'
-import { submitResponse } from '../api/responsesApi'
+import { fetchRequestById, respondToRequest } from '../api/requestsApi'
 import { useLoading } from '../context/LoadingContext'
 import { toast } from 'react-hot-toast'
 import LoadingButton from './ui/LoadingButton.jsx'
 
+import { useAuth } from '../context/AuthContext'
+
 export default function RespondPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { showLoading, hideLoading } = useLoading()
   
   const [request, setRequest] = useState(null)
@@ -18,9 +20,15 @@ export default function RespondPage() {
   const [formData, setFormData] = useState({
     available: true,
     arrivalTime: '30',
-    contactNumber: '',
+    contactNumber: user?.phone || '',
     message: ''
   })
+
+  useEffect(() => {
+    if (user?.phone) {
+      setFormData(prev => ({ ...prev, contactNumber: prev.contactNumber || user.phone }))
+    }
+  }, [user])
 
   useEffect(() => {
     const loadRequest = async () => {
@@ -35,7 +43,7 @@ export default function RespondPage() {
       }
     }
     loadRequest()
-  }, [id])
+  }, [id, navigate])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -52,16 +60,27 @@ export default function RespondPage() {
       return
     }
 
+    const creatorId = (request?.requesterId?._id || request?.requesterId)?.toString()
+    const currentUserId = (user?._id || user?.id)?.toString()
+    if (creatorId && currentUserId && creatorId === currentUserId) {
+      toast.error('You cannot respond to your own blood request.')
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      await submitResponse({
-        requestId: id,
-        ...formData
+      await respondToRequest(id, {
+        responderId: user?._id || user?.id,
+        responderName: user?.name || 'Verified Donor',
+        status: 'Accepted',
+        eta: formData.arrivalTime,
+        note: formData.message,
+        contactNumber: formData.contactNumber,
       })
-      toast.success('Your response has been sent! ❤️')
-      setTimeout(() => navigate('/requests'), 2000)
+      toast.success('Your response has been sent! (+10 XP earned) ❤️')
+      setTimeout(() => navigate('/requests'), 1500)
     } catch (error) {
-      toast.error('Failed to send response')
+      toast.error(error.message || 'Failed to send response')
     } finally {
       setIsSubmitting(false)
     }
@@ -81,6 +100,30 @@ export default function RespondPage() {
       </div>
     </div>
   )
+
+  const creatorId = (request?.requesterId?._id || request?.requesterId)?.toString()
+  const currentUserId = (user?._id || user?.id)?.toString()
+  if (creatorId && currentUserId && creatorId === currentUserId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-900 px-4">
+        <div className="text-center space-y-4 max-w-md bg-white dark:bg-gray-800 p-10 rounded-[2.5rem] border border-slate-100 dark:border-gray-700 shadow-xl">
+          <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mx-auto text-2xl">
+            ℹ️
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">Your Own Request</h2>
+          <p className="text-sm text-slate-500 dark:text-gray-400">
+            You are the creator of this blood request. You cannot respond to your own request.
+          </p>
+          <button
+            onClick={() => navigate('/requests')}
+            className="px-8 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl font-bold hover:scale-105 transition"
+          >
+            Go to Requests
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const urgencyLevels = {
     'Critical': 'from-red-600 to-red-800',
@@ -195,21 +238,28 @@ export default function RespondPage() {
                   required
                   checked={formData.available}
                   onChange={handleChange}
-                  className="w-6 h-6 rounded-lg text-red-600 focus:ring-red-500 border-red-300"
+                  disabled={request.requiredBefore && new Date(request.requiredBefore).getTime() <= Date.now()}
+                  className="w-6 h-6 rounded-lg text-red-600 focus:ring-red-500 border-red-300 disabled:opacity-50"
                 />
                 <p className="text-sm font-black text-red-900 dark:text-red-200 leading-tight">
                   I confirm that I am available to fulfill this request and meet the health criteria for donation.
                 </p>
               </div>
 
-              <LoadingButton
-                type="submit"
-                loading={isSubmitting}
-                loadingText="Sending Response..."
-                className="w-full py-6 rounded-[2rem] bg-slate-900 dark:bg-red-600 text-xl font-black text-white shadow-2xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                Send Response Now
-              </LoadingButton>
+              {request.requiredBefore && new Date(request.requiredBefore).getTime() <= Date.now() ? (
+                <div className="w-full py-6 rounded-[2rem] bg-gray-300 dark:bg-gray-700 text-xl font-black text-white text-center cursor-not-allowed">
+                  Request Expired
+                </div>
+              ) : (
+                <LoadingButton
+                  type="submit"
+                  loading={isSubmitting}
+                  loadingText="Sending Response..."
+                  className="w-full py-6 rounded-[2rem] bg-slate-900 dark:bg-red-600 text-xl font-black text-white shadow-2xl shadow-slate-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  Send Response Now
+                </LoadingButton>
+              )}
             </form>
           </div>
         </div>

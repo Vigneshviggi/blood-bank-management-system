@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../constants/Theme';
 
 export default function UnitsCounter({ units, onChange, error }) {
   const handleMinus = () => {
@@ -52,49 +53,50 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   labelError: {
-    color: '#C81E4A',
+    color: Colors.error,
   },
   counterRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   button: {
-    width: 52,
-    height: 52,
-    backgroundColor: '#1D1B20',
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#F7F8FA',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#1D1B20',
+    borderColor: Colors.border,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#F0F0F0',
+    borderColor: '#E5E7EB',
   },
   buttonText: {
-    color: '#FFF',
-    fontSize: 26,
-    fontWeight: '400',
+    color: Colors.text,
+    fontSize: 24,
+    fontWeight: '600',
     lineHeight: 32, // to center properly vertically on Android
   },
   valueText: {
-    color: '#FFF',
-    fontSize: 28,
-    fontWeight: '800',
-    marginHorizontal: 30,
-    minWidth: 32,
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    marginHorizontal: 16,
+    width: 32,
     textAlign: 'center',
   },
   errorText: {
-    color: '#C81E4A',
+    color: Colors.error,
     fontSize: 12,
     marginTop: 8,
     fontWeight: '500',

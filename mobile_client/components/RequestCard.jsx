@@ -12,7 +12,7 @@ const RequestCard = ({ request, onPress, onRespond }) => {
   const units = request.unitsNeeded ?? request.quantity ?? request.units ?? 0;
   const bloodGroup = request.bloodGroup || request.bloodType || 'Blood Needed';
   const requiredDate = request.requiredDate || request.dateRequired || request.createdAt;
-  const distance = request.distance || request.location || 'Nearby';
+  const distance = typeof request.distanceKm === 'number' ? `${request.distanceKm} km away` : (request.distance || request.location || 'Nearby');
   const requesterBadge = request.requesterType === 'hospital' ? 'Verified Hospital' : 'Verified Donor';
   const statusLabel = request.status || 'Pending';
   const statusVariant =
@@ -25,7 +25,9 @@ const RequestCard = ({ request, onPress, onRespond }) => {
       <GlassCard style={[styles.card, isUrgent && styles.urgentCard]}>
         <View style={styles.header}>
           <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{request.patientName || request.hospitalName || 'Blood Request'}</Text>
+            <Text style={styles.patientName}>
+              {request.patientName || request.requesterId?.name || request.hospitalId?.name || 'Blood Request'}
+            </Text>
             <Text style={styles.hospitalName} numberOfLines={2}>
               {request.reason || request.location || 'Emergency Request'}
             </Text>

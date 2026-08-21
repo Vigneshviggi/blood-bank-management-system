@@ -26,8 +26,8 @@ const requestSchema = new mongoose.Schema({
     default: 'Pending'
   },
   coordinates: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] }
+    type: { type: String, enum: ['Point'] },
+    coordinates: [Number]
   },
   responses: [{
     responderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -38,6 +38,6 @@ const requestSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-requestSchema.index({ coordinates: '2dsphere' });
+requestSchema.index({ coordinates: '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('Request', requestSchema);

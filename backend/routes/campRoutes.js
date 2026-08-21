@@ -31,7 +31,8 @@ router.post('/', verifyToken, authorizeRoles('admin', 'hospital', 'blood_bank'),
     payload.maxParticipants = payload.maxParticipants ?? payload.capacity ?? 0;
 
     if (req.file) {
-      payload.bannerImage = req.file.path;
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.bannerImage = req.file.path.startsWith('http') ? req.file.path : `${baseUrl}/uploads/${req.file.filename}`;
     }
 
     const newCamp = new Camp(payload);
@@ -80,8 +81,45 @@ router.get('/my-registrations', verifyToken, async (req, res) => {
 // Register for a camp
 router.post('/:id/register', verifyToken, async (req, res) => {
   try {
-    const { userId, bloodGroup, contactInfo } = req.body;
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const { bloodGroup, contactInfo } = req.body;
     const campId = req.params.id;
+
+    // Verify camp exists
+    const camp = await Camp.findById(campId);
+    if (!camp) {
+      return res.status(404).json({ success: false, message: 'Camp not found' });
+    }
+
+    // Determine status dynamically
+    const now = new Date();
+    let isCompleted = camp.status === 'Completed';
+    
+    if (camp.date) {
+      const campDateEnd = new Date(camp.date);
+      if (!isNaN(campDateEnd.getTime())) {
+        campDateEnd.setHours(23, 59, 59, 999);
+        if (campDateEnd.getTime() < now.getTime()) {
+          isCompleted = true;
+        }
+      }
+    }
+
+    if (isCompleted) {
+      return res.status(400).json({ success: false, message: 'Registration Closed: Camp has already completed' });
+    }
+
+    // Verify capacity
+    const capacity = Number(camp.capacity || camp.maxParticipants || Infinity);
+    const registeredCount = Number(camp.registeredCount || camp.currentRegistrations || 0);
+    
+    if (capacity > 0 && registeredCount >= capacity) {
+      return res.status(400).json({ success: false, message: 'Camp is currently full' });
+    }
 
     const existing = await CampRegistration.findOne({ campId, userId });
     if (existing) {
@@ -91,17 +129,18 @@ router.post('/:id/register', verifyToken, async (req, res) => {
     const registration = new CampRegistration({ campId, userId, bloodGroup, contactInfo, status: 'Registered' });
     await registration.save();
 
-    const camp = await Camp.findByIdAndUpdate(campId, { $inc: { registeredCount: 1, currentRegistrations: 1 } }, { new: true });
+    const updatedCamp = await Camp.findByIdAndUpdate(campId, { $inc: { registeredCount: 1, currentRegistrations: 1 } }, { new: true });
 
     const io = req.app.get('socketio');
     if (io) {
-      io.emit('campRegistrationUpdate', { campId, registration, camp });
+      io.emit('campRegistrationUpdate', { campId, registration, camp: updatedCamp });
+      io.emit('campUpdate', updatedCamp);
     }
 
     const notification = new Notification({
       userId,
       title: 'Camp Registration Confirmed',
-      message: `You are registered for ${camp?.title || 'the blood donation camp'}.`,
+      message: `You are registered for ${updatedCamp?.title || 'the blood donation camp'}.`,
       type: 'camp',
       urgency: 'medium',
       redirectUrl: `/camps/${campId}`,
@@ -109,20 +148,30 @@ router.post('/:id/register', verifyToken, async (req, res) => {
     });
     await notification.save();
 
-    res.status(201).json({ success: true, message: 'Registered successfully', data: registration });
+    res.status(201).json({ success: true, message: 'Registered successfully', data: registration, camp: updatedCamp });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }
 });
 
 // Cancel registration
-router.delete('/:id/register/:userId', async (req, res) => {
+router.delete('/:id/register', verifyToken, async (req, res) => {
   try {
-    const { id, userId } = req.params;
-    const deleted = await CampRegistration.findOneAndDelete({ campId: id, userId });
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const campId = req.params.id;
+    const deleted = await CampRegistration.findOneAndDelete({ campId, userId });
+    
     if (deleted) {
-      await Camp.findByIdAndUpdate(id, { $inc: { registeredCount: -1 } });
-      res.json({ success: true, message: 'Registration cancelled' });
+      const updatedCamp = await Camp.findByIdAndUpdate(campId, { $inc: { registeredCount: -1, currentRegistrations: -1 } }, { new: true });
+      
+      const io = req.app.get('socketio');
+      if (io && updatedCamp) {
+        io.emit('campUpdate', updatedCamp);
+      }
+      
+      res.json({ success: true, message: 'Registration cancelled', camp: updatedCamp });
     } else {
       res.status(404).json({ success: false, message: 'Registration not found' });
     }
@@ -189,13 +238,21 @@ router.get('/:id/attendees', async (req, res) => {
 });
 
 // Cancel registration (POST version)
-router.post('/:id/cancel-registration', async (req, res) => {
+router.post('/:id/cancel-registration', verifyToken, async (req, res) => {
   try {
-    const { userId } = req.body; // or from auth
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
     const deleted = await CampRegistration.findOneAndDelete({ campId: req.params.id, userId });
     if (deleted) {
-      await Camp.findByIdAndUpdate(req.params.id, { $inc: { registeredCount: -1 } });
-      res.json({ success: true, message: 'Registration cancelled' });
+      const updatedCamp = await Camp.findByIdAndUpdate(req.params.id, { $inc: { registeredCount: -1, currentRegistrations: -1 } }, { new: true });
+      
+      const io = req.app.get('socketio');
+      if (io && updatedCamp) {
+        io.emit('campUpdate', updatedCamp);
+      }
+
+      res.json({ success: true, message: 'Registration cancelled', camp: updatedCamp });
     } else {
       res.status(404).json({ success: false, message: 'Registration not found' });
     }

@@ -13,6 +13,7 @@ const donorRoutes = require("./routes/donorRoutes");
 const campRoutes = require("./routes/campRoutes");
 const hospitalRoutes = require("./routes/hospitalRoutes");
 const responseRoutes = require("./routes/responseRoutes");
+const donationRoutes = require("./routes/donationRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const heroRoutes = require("./routes/heroRoutes");
 const featureRoutes = require("./routes/featureRoutes");
@@ -69,6 +70,10 @@ module.exports.io = io;
 app.use(cors());
 app.use(express.json());
 
+// Serve uploads folder statically for local image storage fallback
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // 🔥 MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB Connected ✅"))
@@ -93,6 +98,9 @@ app.use("/api/hospitals", hospitalRoutes);
 
 // Response routes
 app.use("/api/responses", responseRoutes);
+
+// Donation routes
+app.use("/api/donations", donationRoutes);
 
 // Notification routes
 app.use("/api/notifications", notificationRoutes);
@@ -126,6 +134,38 @@ app.get("/", (req, res) => {
 app.get("/hello", (req, res)=>{
     res.send("Hello World");
 })
+
+app.get('/test-email', async (req, res) => {
+  try {
+    const { sendOTPEmail } =
+      require('./utils/emailService');
+
+    const sent = await sendOTPEmail(
+      process.env.EMAIL_FROM,
+      '123456'
+    );
+
+    if (sent) {
+      return res.json({
+        success: true,
+        message: 'Test email sent successfully'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Email failed'
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // ==============================
 // 📩 CONTACT SUPPORT ROUTES

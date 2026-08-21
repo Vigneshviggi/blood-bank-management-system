@@ -5,7 +5,7 @@ import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
 import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 import api from '../services/api';
-import { Beaker, Megaphone, PlusCircle, Activity, AlertTriangle } from 'lucide-react-native';
+import { Beaker, Megaphone, PlusCircle, Activity, AlertTriangle, Bell } from 'lucide-react-native';
 
 const HospitalDashboard = ({ navigation }) => {
   const { user } = useContext(AuthContext);
@@ -87,9 +87,6 @@ const HospitalDashboard = ({ navigation }) => {
         </View>
         <View style={styles.rightNav}>
           <View style={styles.rolePill}><Text style={styles.roleText}>Hospital</Text></View>
-          <TouchableOpacity style={styles.bellBtn}>
-            <Activity size={20} color={Colors.text} />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -103,7 +100,7 @@ const HospitalDashboard = ({ navigation }) => {
         </View>
 
         <View style={styles.statsRow}>
-          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('BloodRequests')} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.statBox} onPress={() => navigation.navigate('Requests')} activeOpacity={0.85}>
             <View style={[styles.statIconChip, { backgroundColor: Colors.primarySoft }]}>
               <Activity size={22} color={Colors.primary} />
             </View>
@@ -146,7 +143,7 @@ const HospitalDashboard = ({ navigation }) => {
             <View style={styles.actionIconChip}><Megaphone size={22} color={Colors.primary} /></View>
             <Text style={styles.actionText}>Organize Camp</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('BloodRequests')} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.actionTile} onPress={() => navigation.navigate('Requests')} activeOpacity={0.85}>
             <View style={styles.actionIconChip}><Activity size={22} color={Colors.textSecondary} /></View>
             <Text style={styles.actionText}>View Requests</Text>
           </TouchableOpacity>
@@ -216,6 +213,18 @@ const styles = StyleSheet.create({
   },
   bellBtn: {
     padding: 4,
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.primary,
+    borderWidth: 2,
+    borderColor: Colors.surface,
   },
   header: {
     paddingHorizontal: 20,

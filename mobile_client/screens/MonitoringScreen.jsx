@@ -1,244 +1,226 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 import ScreenContainer from '../components/ScreenContainer';
 import GlassCard from '../components/ui/GlassCard';
 import Badge from '../components/ui/Badge';
 import { Colors } from '../constants/Theme';
-import { Activity, Clock, Droplet, MapPin, AlertTriangle } from 'lucide-react-native';
 import api from '../services/api';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import { useSocket } from '../context/SocketContext';
+import { Activity, AlertTriangle, ChevronLeft } from 'lucide-react-native';
 
-dayjs.extend(relativeTime);
-
-const MonitoringScreen = () => {
+const MonitoringScreen = ({ navigation }) => {
+  const socket = useSocket();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [liveEvents, setLiveEvents] = useState([]);
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
+  const fetchActivity = async () => {
     try {
       const res = await api.get('/requests');
-      // Show pending/active requests sorted by creation date (newest first)
-      const activeRequests = res.data
-        .filter(r => r.status === 'Pending')
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setRequests(activeRequests);
+      const sorted = [...(res.data || [])].sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      );
+      setRequests(sorted.slice(0, 30));
     } catch (err) {
-      console.error('Error fetching live requests:', err);
+      setRequests([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  useEffect(() => {
+    fetchActivity();
+  }, []);
+
+  // Live-tail anything the socket pushes, on top of the polled snapshot above.
+  useEffect(() => {
+    if (!socket) return;
+    const onRequestUpdate = (payload) => {
+      setLiveEvents((prev) => [
+        { id: `${Date.now()}-${Math.random()}`, ...payload, receivedAt: new Date().toISOString() },
+        ...prev,
+      ].slice(0, 20));
+    };
+    socket.on('request_update', onRequestUpdate);
+    socket.on('emergency_alert', onRequestUpdate);
+    return () => {
+      socket.off('request_update', onRequestUpdate);
+      socket.off('emergency_alert', onRequestUpdate);
+    };
+  }, [socket]);
+
   const onRefresh = () => {
     setRefreshing(true);
-    fetchRequests();
+    fetchActivity();
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    );
-  }
-
-  const criticalCount = requests.filter(r => r.isEmergency).length;
+  const criticalCount = requests.filter(
+    (r) => String(r.emergencyLevel || '').toLowerCase() === 'critical'
+  ).length;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer scrollable={false}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <ChevronLeft size={20} color={Colors.text} />
+        <Text style={styles.backText}>Back to Dashboard</Text>
+      </TouchableOpacity>
+
       <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Activity size={28} color={Colors.primary} />
-          <Text style={styles.title}>Live Monitor</Text>
+        <View style={styles.headerCopy}>
+          <Text style={styles.title}>System Monitoring</Text>
+          <Text style={styles.subtitle}>Live request activity and emergency signals across the platform.</Text>
         </View>
-        <Badge label={`${requests.length} Active`} variant="primary" />
+        <Badge label={socket ? 'Live' : 'Offline'} variant={socket ? 'success' : 'neutral'} />
       </View>
 
-      {criticalCount > 0 && (
-        <View style={styles.criticalBanner}>
+      <View style={styles.statsRow}>
+        <GlassCard style={styles.statBox}>
+          <Activity size={20} color={Colors.primary} />
+          <Text style={styles.statValue}>{requests.length}</Text>
+          <Text style={styles.statLabel}>Tracked Requests</Text>
+        </GlassCard>
+        <GlassCard style={styles.statBox}>
           <AlertTriangle size={20} color={Colors.error} />
-          <Text style={styles.criticalText}>{criticalCount} Critical Emergencies Ongoing!</Text>
-        </View>
+          <Text style={styles.statValue}>{criticalCount}</Text>
+          <Text style={styles.statLabel}>Critical</Text>
+        </GlassCard>
+      </View>
+
+      {liveEvents.length > 0 && (
+        <GlassCard style={styles.liveCard}>
+          <Text style={styles.liveTitle}>Live Feed</Text>
+          {liveEvents.slice(0, 5).map((event) => (
+            <Text key={event.id} style={styles.liveItem} numberOfLines={1}>
+              • {event.message || event.status || 'Update received'} — {new Date(event.receivedAt).toLocaleTimeString()}
+            </Text>
+          ))}
+        </GlassCard>
       )}
 
       <FlatList
         data={requests}
         keyExtractor={(item) => item._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <GlassCard style={[styles.card, item.isEmergency && styles.emergencyCard]}>
-            <View style={styles.cardHeader}>
-              <View style={styles.headerLeft}>
-                <View style={[styles.bloodGroupBadge, item.isEmergency && styles.emergencyBg]}>
-                  <Droplet size={14} color="#fff" />
-                  <Text style={styles.bloodGroupText}>{item.bloodType}</Text>
-                </View>
-                {item.isEmergency && (
-                  <Badge label="EMERGENCY" variant="error" />
-                )}
-              </View>
-              <View style={styles.timeRow}>
-                <Clock size={12} color={Colors.textSecondary} />
-                <Text style={styles.timeText}>{dayjs(item.createdAt).fromNow()}</Text>
-              </View>
+          <GlassCard style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>{item.patientName || item.hospitalName || 'Blood Request'}</Text>
+              <Text style={styles.rowSubtitle}>{item.location || 'Unknown location'}</Text>
             </View>
-
-            <View style={styles.details}>
-              <Text style={styles.patientName}>Patient: {item.patientName}</Text>
-              <View style={styles.locationRow}>
-                <MapPin size={16} color={Colors.textSecondary} />
-                <Text style={styles.locationText}>{item.hospitalName || item.location}</Text>
-              </View>
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                {item.unitsRequired} Units Required • {item.responses?.length || 0} Responses
-              </Text>
-            </View>
+            <Badge
+              label={item.status || 'Pending'}
+              variant={item.status === 'Completed' ? 'success' : item.status === 'Cancelled' ? 'neutral' : 'warning'}
+            />
           </GlassCard>
         )}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No active requests to monitor.</Text>
-          </View>
+          !loading && (
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No recent activity to show.</Text>
+            </GlassCard>
+          )
         }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
       />
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
+  backBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    marginBottom: 12,
+  },
+  backText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+    marginLeft: 4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+  headerCopy: {
+    flex: 1,
+    paddingRight: 12,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
   },
-  criticalBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 20,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  criticalText: {
-    color: Colors.error,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  listContent: {
-    paddingBottom: 100,
-  },
-  card: {
-    marginBottom: 16,
-    padding: 16,
-  },
-  emergencyCard: {
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    borderWidth: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  bloodGroupBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  emergencyBg: {
-    backgroundColor: Colors.error,
-  },
-  bloodGroupText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  details: {
-    marginBottom: 12,
-  },
-  patientName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 6,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  locationText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-  },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
-    paddingTop: 12,
-  },
-  footerText: {
+  subtitle: {
+    marginTop: 6,
     fontSize: 13,
     color: Colors.textSecondary,
-    fontWeight: '500',
   },
-  emptyContainer: {
-    padding: 40,
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  statBox: {
+    flex: 1,
     alignItems: 'center',
+    padding: 16,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.text,
+    marginTop: 6,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+  liveCard: {
+    marginBottom: 14,
+  },
+  liveTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  liveItem: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    marginBottom: 10,
+  },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  emptyCard: {
+    alignItems: 'center',
+    padding: 32,
+    marginTop: 24,
   },
   emptyText: {
     color: Colors.textSecondary,
-    fontSize: 16,
+  },
+  listContent: {
+    paddingBottom: 120,
   },
 });
 

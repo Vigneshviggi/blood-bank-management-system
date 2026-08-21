@@ -49,18 +49,21 @@ const RequestHistoryScreen = ({ navigation }) => {
 
   if (loading) return <LoadingSkeleton height={60} />;
 
-  return (
-    <ScreenContainer>
-      <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.title}>Request History</Text>
-          <Text style={styles.subtitle}>Review all requests you created or responded to.</Text>
-        </View>
-        <Badge label={`${requests.length} Items`} variant="primary" />
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={styles.headerCopy}>
+        <Text style={styles.title}>Request History</Text>
+        <Text style={styles.subtitle}>Review all requests you created or responded to.</Text>
       </View>
+      <Badge label={`${requests.length} Items`} variant="primary" />
+    </View>
+  );
 
+  return (
+    <ScreenContainer scrollable={false}>
       <FlatList
         data={requests}
+        ListHeaderComponent={renderHeader}
         keyExtractor={item => item._id}
         renderItem={({ item }) => (
           <RequestCard request={item} onPress={() => navigation.navigate('RequestDetails', { request: item })} />
@@ -101,6 +104,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
     paddingBottom: 120,
   },
   emptyCard: {

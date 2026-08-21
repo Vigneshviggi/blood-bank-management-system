@@ -1,5 +1,8 @@
 const User = require('../models/User');
+const Donation = require('../models/Donation');
 const Notification = require('../models/Notification');
+const { XP_CONFIG, calculateDonorProgress } = require('../utils/gamification');
+const { calculateNextDonationDate } = require('../utils/registrationHelpers');
 
 /**
  * Service to process rewards and gamification for donors
@@ -7,81 +10,58 @@ const Notification = require('../models/Notification');
  * 
  * @param {String} userId - ID of the donor
  * @param {Object} io - Socket.io instance to emit alerts
+ * @param {Object} options - { requestId, isEmergency, donationId }
  */
-const processDonationRewards = async (userId, io) => {
+const processDonationRewards = async (userId, io, options = {}) => {
   try {
     const user = await User.findById(userId);
-    if (!user) return;
+    if (!user) return { success: false, error: 'User not found' };
+
+    const isEmergency = Boolean(options.isEmergency);
+    const xpReward = isEmergency ? XP_CONFIG.EMERGENCY_DONATION_COMPLETED : XP_CONFIG.DONATION_COMPLETED;
 
     // 1. Increment points and donation count
-    // Award 50 points per successful donation
-    user.points += 50;
-    user.donationsCount += 1;
+    user.donationsCount = (user.donationsCount || 0) + 1;
+    user.points = (user.points || 0) + xpReward;
 
-    let newBadge = null;
-
-    // 2. Check and Award Badges
-    const counts = user.donationsCount;
-    
-    if (counts === 1 && !user.badges.includes('First Donation')) {
-      newBadge = 'First Donation';
-    } else if (counts === 5 && !user.badges.includes('Hero - 5 Donations')) {
-      newBadge = 'Hero - 5 Donations';
-    } else if (counts === 10 && !user.badges.includes('Super Hero - 10 Donations')) {
-      newBadge = 'Super Hero - 10 Donations';
-    } else if (counts === 25 && !user.badges.includes('Legend - 25 Donations')) {
-      newBadge = 'Legend - 25 Donations';
-    } else if (counts === 50 && !user.badges.includes('Life Saver - 50 Donations')) {
-      newBadge = 'Life Saver - 50 Donations';
-    }
-
-    if (newBadge) {
-      user.badges.push(newBadge);
-      
-      // Emit real-time badge unlock notification
-      const message = `Congratulations! You've unlocked the '${newBadge}' badge and earned 50 points!`;
-      
-      const notif = new Notification({
-        user: user._id,
-        title: 'Achievement Unlocked! 🏆',
-        message: message,
-        type: 'achievement',
-        link: '/profile'
-      });
-      await notif.save();
-
-      if (io) {
-        io.emit('receiveNotification', {
-          userId: user._id,
-          title: 'Achievement Unlocked! 🏆',
-          message: message,
-          type: 'achievement'
-        });
-      }
-    } else {
-      // Just points notification
-      const notif = new Notification({
-        user: user._id,
-        title: 'Points Earned! ⭐',
-        message: 'You earned 50 points for your recent donation.',
-        type: 'points',
-        link: '/profile'
-      });
-      await notif.save();
-
-      if (io) {
-        io.emit('receiveNotification', {
-          userId: user._id,
-          title: 'Points Earned! ⭐',
-          message: 'You earned 50 points for your recent donation.',
-          type: 'points'
-        });
-      }
-    }
-
+    const donationDate = new Date();
+    user.lastDonationDate = donationDate;
+    user.nextDonationDate = new Date(calculateNextDonationDate(donationDate, user.medicalDonationGapDays || 90));
     await user.save();
-    return { success: true, user };
 
+    // 2. Get updated progress with real achievements
+    const emergencyDonationsCount = await Donation.countDocuments({
+      donor: user._id,
+      status: 'Completed',
+      isEmergency: true,
+    });
+    const progress = calculateDonorProgress(user, { emergencyDonationsCount });
+
+    // 3. Create Notification
+    const notif = new Notification({
+      userId: user._id,
+      title: '🩸 Donation Completed & Points Earned!',
+      message: `You earned +${xpReward} XP for completing a blood donation! Current Level: ${progress.donorLevel} (${progress.donorRank}).`,
+      type: 'donation_completed',
+      link: '/profile',
+    });
+    await notif.save();
+
+    // 4. Emit real-time Socket.IO events
+    if (io) {
+      io.emit('donor_progress_updated', {
+        userId: user._id.toString(),
+        ...progress,
+      });
+      io.emit('receiveNotification', {
+        userId: user._id,
+        title: '🩸 Donation Completed & Points Earned!',
+        message: `You earned +${xpReward} XP! Current Level: ${progress.donorLevel} (${progress.donorRank}).`,
+        type: 'donation_completed',
+      });
+    }
+
+    return { success: true, user, progress };
   } catch (error) {
     console.error("Reward Service Error:", error);
     return { success: false, error };

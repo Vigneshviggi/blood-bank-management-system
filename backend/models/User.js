@@ -40,17 +40,28 @@ const userSchema = new mongoose.Schema({
   // Gamification & Status
   points: { type: Number, default: 0 },
   donationsCount: { type: Number, default: 0 },
+  lastDonationDate: { type: Date, default: null },
+  nextDonationDate: { type: Date, default: null },
+  medicalDonationGapDays: { type: Number, default: 90 },
   badges: [{ type: String }],
   status: { type: String, enum: ['active', 'suspended', 'inactive'], default: 'active' },
   
   // Geolocation
   coordinates: {
-    type: { type: String, enum: ['Point'], default: 'Point' },
-    coordinates: { type: [Number], default: [0, 0] }
-  }
+    type: { type: String, enum: ['Point'] },
+    coordinates: [Number]
+  },
+  
+  // Settings & Security
+  preferences: {
+    pushNotifications: { type: Boolean, default: true },
+    emailAlerts: { type: Boolean, default: true },
+    locationSharing: { type: Boolean, default: true }
+  },
+  tokenVersion: { type: Number, default: 0 }
 }, { timestamps: true });
 
 userSchema.index({ name: 'text', email: 'text', bloodGroup: 'text', location: 'text' });
-userSchema.index({ coordinates: '2dsphere' });
+userSchema.index({ coordinates: '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('User', userSchema);

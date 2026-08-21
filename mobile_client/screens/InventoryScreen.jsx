@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import ScreenContainer from '../components/ScreenContainer';
+import ScreenHeader from '../components/ScreenHeader';
 import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
@@ -12,6 +12,7 @@ const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 const InventoryScreen = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [stock, setStock] = useState({});
+  const [hospitalId, setHospitalId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -28,6 +29,7 @@ const InventoryScreen = ({ navigation }) => {
     try {
       const res = await api.get(`/hospitals/profile/me`);
       setStock(res.data.stock || {});
+      setHospitalId(res.data._id);
     } catch (err) {
       console.error('Error fetching inventory', err);
     } finally {
@@ -36,18 +38,21 @@ const InventoryScreen = ({ navigation }) => {
   };
 
   const getStatus = (units) => {
-    if (units >= 20) return { label: 'Available', color: '#0E9F6E', bg: '#E3F6F3' };
-    if (units >= 5) return { label: 'Low', color: '#DC7609', bg: '#FFF3E0' };
-    return { label: 'Critical', color: '#D92D20', bg: '#FDE7ED' };
+    if (units >= 20) return { label: 'Available', color: Colors.success, bg: 'rgba(3, 152, 85, 0.08)' };
+    if (units >= 5) return { label: 'Low', color: Colors.warning, bg: 'rgba(220, 104, 3, 0.08)' };
+    return { label: 'Critical', color: Colors.error, bg: '#FDE7ED' };
   };
 
   const handleUpdateStock = async () => {
-    if (!quantity) return;
+    if (!quantity || !hospitalId) return;
     setUpdating(true);
-    const newStock = { ...stock, [selectedGroup]: (stock[selectedGroup] || 0) + parseInt(quantity) };
     try {
-      await api.put(`/hospitals/profile/me`, { stock: newStock });
-      setStock(newStock);
+      const res = await api.put(`/hospitals/${hospitalId}/stock`, {
+        bloodGroup: selectedGroup,
+        quantity: parseInt(quantity),
+        operation: 'add'
+      });
+      setStock(res.data.data || res.data); // data is the updated stock object
       setModalVisible(false);
       setQuantity('');
     } catch (err) {
@@ -66,14 +71,9 @@ const InventoryScreen = ({ navigation }) => {
   }
 
   return (
-    <ScreenContainer scrollable={false} style={{ paddingHorizontal: 0 }}>
-      <View style={styles.topNav}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-          <Info size={24} color={Colors.text} style={{transform: [{rotate: '180deg'}]}} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>Blood Inventory</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader title="Blood Inventory" showBack={false} />
+
 
       <View style={styles.listHeader}>
         <Text style={[styles.headerCol, {flex: 1}]}>Blood Group</Text>
@@ -158,28 +158,20 @@ const InventoryScreen = ({ navigation }) => {
           </View>
         </View>
       )}
-    </ScreenContainer>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  topNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  navTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
+    backgroundColor: Colors.background,
   },
   listHeader: {
     flexDirection: 'row',

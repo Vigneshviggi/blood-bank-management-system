@@ -6,15 +6,16 @@ import Card from './Card.jsx'
 import LoadingButton from './ui/LoadingButton.jsx'
 import toast from 'react-hot-toast'
 import BackButton from './BackButton.jsx'
-
+import { getCurrentCoordinates, reverseGeocode } from '../services/locationService'
+import { io } from 'socket.io-client'
 
 export default function Profile() {
   const navigate = useNavigate()
   const { user, updateProfile: updateContextProfile } = useAuth()
 
   const [isEditing, setIsEditing] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(false)
+  const [gpsLoading, setGpsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -23,8 +24,11 @@ export default function Profile() {
     location: user?.location || '',
     bio: user?.bio || 'Dedicated LifeLink member.',
     imageUrl: user?.imageUrl || '',
+    latitude: user?.latitude || '',
+    longitude: user?.longitude || ''
   })
 
+  // Sync state if context updates
   useEffect(() => {
     if (user) {
       setFormData({
@@ -35,13 +39,63 @@ export default function Profile() {
         location: user.location || '',
         bio: user.bio || 'Dedicated LifeLink member.',
         imageUrl: user.imageUrl || '',
+        latitude: user.latitude || user.coordinates?.coordinates?.[1] || '',
+        longitude: user.longitude || user.coordinates?.coordinates?.[0] || ''
       })
     }
   }, [user])
 
+  // Socket.IO listener for real-time donor progress updates
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+
+    const handleProgressUpdate = (data) => {
+      const currentId = user?._id || user?.id;
+      if (data && data.userId && currentId && data.userId === currentId) {
+        axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile`)
+          .then((res) => {
+            if (res.data?.success && res.data.user) {
+              updateContextProfile(res.data.user);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    socket.on('donor_progress_updated', handleProgressUpdate);
+    return () => {
+      socket.off('donor_progress_updated', handleProgressUpdate);
+      socket.disconnect();
+    };
+  }, [user, updateContextProfile]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleGetLocation = async () => {
+    setGpsLoading(true)
+    try {
+      const coords = await getCurrentCoordinates()
+      let readableLocation = `GPS (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`
+      try {
+        const address = await reverseGeocode(coords.latitude, coords.longitude)
+        if (address) readableLocation = address
+      } catch (_e) {}
+
+      setFormData(prev => ({
+        ...prev,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        location: readableLocation
+      }))
+      toast.success(`Location acquired: ${readableLocation}`)
+    } catch (err) {
+      toast.error(err.message || 'Unable to fetch current GPS location')
+    } finally {
+      setGpsLoading(false)
+    }
   }
 
   const handleImageUpload = (e) => {
@@ -59,10 +113,30 @@ export default function Profile() {
     if (!user) return;
     setLoading(true);
     try {
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${user._id}`, formData);
+      const payload = { ...formData };
+      if (
+        formData.latitude !== '' &&
+        formData.longitude !== '' &&
+        formData.latitude !== undefined &&
+        formData.longitude !== undefined &&
+        !isNaN(Number(formData.latitude)) &&
+        !isNaN(Number(formData.longitude))
+      ) {
+        const lat = Number(formData.latitude);
+        const lng = Number(formData.longitude);
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && !(lat === 0 && lng === 0)) {
+          payload.latitude = lat;
+          payload.longitude = lng;
+          payload.coordinates = {
+            type: 'Point',
+            coordinates: [lng, lat]
+          };
+        }
+      }
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/users/${user._id}`, payload);
       updateContextProfile(response.data);
-      setIsEditing(false)
-      toast.success('Profile updated successfully!')
+      setIsEditing(false);
+      toast.success('Profile and location updated successfully!');
     } catch (error) {
       toast.error('Failed to update profile: ' + (error.response?.data?.error || error.message));
     } finally {
@@ -70,16 +144,21 @@ export default function Profile() {
     }
   }
 
-  const donationStats = [
-    { label: 'Total Donations', value: '12', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>, color: 'text-red-600' },
-    { label: 'Lives Impacted', value: '36', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>, color: 'text-rose-600' },
-    { label: 'Reliability', value: '4.9', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.382-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>, color: 'text-amber-500' },
-  ]
+  // Database-driven progression metrics
+  const donationsCount = user?.donationsCount ?? 0;
+  const points = user?.points ?? 0;
+  const donorLevel = user?.donorLevel || (points >= 2000 ? 6 : points >= 1000 ? 5 : points >= 500 ? 4 : points >= 250 ? 3 : points >= 100 ? 2 : 1);
+  const donorRank = user?.donorRank || (donorLevel >= 6 ? 'LifeLink Champion' : donorLevel >= 5 ? 'Life Saver' : donorLevel >= 4 ? 'Dedicated Donor' : donorLevel >= 3 ? 'Regular Donor' : donorLevel >= 2 ? 'Active Donor' : 'New Donor');
+  const nextLevelXp = user?.nextLevelXp || (donorLevel === 1 ? 100 : donorLevel === 2 ? 250 : donorLevel === 3 ? 500 : donorLevel === 4 ? 1000 : donorLevel === 5 ? 2000 : null);
+  const currentLevelMin = user?.currentLevelMin || (donorLevel === 1 ? 0 : donorLevel === 2 ? 100 : donorLevel === 3 ? 250 : donorLevel === 4 ? 500 : donorLevel === 5 ? 1000 : 2000);
+  const pointsNeeded = nextLevelXp ? Math.max(0, nextLevelXp - points) : 0;
+  const progressPercent = nextLevelXp ? Math.min(100, Math.max(0, Math.round(((points - currentLevelMin) / (nextLevelXp - currentLevelMin)) * 100))) : 100;
+  const achievements = user?.achievements || [];
 
-  const recentActivity = [
-    { type: 'Donation', date: '2026-04-15', location: 'City Hospital', units: '1 Unit' },
-    { type: 'Donation', date: '2026-02-20', location: 'Red Cross Center', units: '1 Unit' },
-    { type: 'Account', date: '2026-01-10', location: 'Profile Created', units: '-' },
+  const donationStats = [
+    { label: 'Completed Donations', value: donationsCount, icon: '🩸', color: 'text-red-600' },
+    { label: 'Total Impact XP', value: `${points} XP`, icon: '⚡', color: 'text-rose-600' },
+    { label: 'Donor Rank', value: donorRank, icon: '⭐', color: 'text-amber-500' },
   ]
 
   return (
@@ -142,8 +221,12 @@ export default function Profile() {
                   <span className="text-xs font-bold text-white/40 uppercase">Group</span>
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 backdrop-blur-sm">
-                  <span className="text-lg font-bold text-emerald-500">Active</span>
-                  <span className="text-xs font-bold text-white/40 uppercase">Status</span>
+                  <span className="text-lg font-bold text-amber-400">Level {donorLevel}</span>
+                  <span className="text-xs font-bold text-white/40 uppercase">{donorRank}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 backdrop-blur-sm">
+                  <span className="text-lg font-bold text-emerald-500">{points} XP</span>
+                  <span className="text-xs font-bold text-white/40 uppercase">Score</span>
                 </div>
               </div>
             </div>
@@ -161,44 +244,67 @@ export default function Profile() {
 
         {/* Profile Content */}
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Stats Bar */}
+          {/* Left Column: Stats & Progression */}
           <div className="lg:col-span-1 space-y-6">
-            <Card title="Impact" subtitle="Your contribution to the network.">
-              <div className="space-y-6 pt-4">
+            {/* Real Progression Card */}
+            <Card title={`Donor Level ${donorLevel}`} subtitle={donorRank}>
+              <div className="space-y-4 pt-2">
+                <div className="flex justify-between text-xs font-bold">
+                  <span className="text-slate-600 dark:text-gray-300">{points} XP Earned</span>
+                  <span className="text-slate-400">{nextLevelXp ? `${points} / ${nextLevelXp} XP` : 'Max Level'}</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-gray-800 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200/50 dark:border-gray-700">
+                  <div 
+                    className="bg-gradient-to-r from-red-500 to-rose-600 h-full rounded-full transition-all duration-500" 
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <p className="text-[11px] font-semibold text-slate-400 text-right">
+                  {nextLevelXp ? `${pointsNeeded} XP to Level ${donorLevel + 1}` : '🏆 Maximum Rank Achieved'}
+                </p>
+              </div>
+            </Card>
+
+            <Card title="Impact & Stats" subtitle="Your verified LifeLink history.">
+              <div className="space-y-4 pt-2">
                 {donationStats.map((stat) => (
-                  <div key={stat.label} className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="text-2xl">{stat.icon}</span>
-                      <p className="text-sm font-bold text-slate-500 dark:text-gray-400">{stat.label}</p>
+                  <div key={stat.label} className="flex items-center justify-between border-b border-slate-100 dark:border-gray-800 pb-3 last:border-0 last:pb-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{stat.icon}</span>
+                      <p className="text-xs font-bold text-slate-500 dark:text-gray-400">{stat.label}</p>
                     </div>
-                    <span className={`text-xl font-bold ${stat.color}`}>{stat.value}</span>
+                    <span className={`text-sm font-black ${stat.color}`}>{stat.value}</span>
                   </div>
                 ))}
               </div>
             </Card>
 
             <Card title="Quick Info">
-               <div className="space-y-4 pt-2">
+               <div className="space-y-3 pt-2">
                  <div className="flex flex-col">
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</span>
-                   <span className="text-sm font-bold text-slate-900 dark:text-white">{formData.location || 'Not set'}</span>
+                   <span className="text-xs font-bold text-slate-900 dark:text-white">{formData.location || 'Not set'}</span>
                  </div>
                  <div className="flex flex-col">
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Phone</span>
-                   <span className="text-sm font-bold text-slate-900 dark:text-white">{formData.phone}</span>
+                   <span className="text-xs font-bold text-slate-900 dark:text-white">{formData.phone || 'Not provided'}</span>
                  </div>
                  <div className="flex flex-col">
-                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Join Date</span>
-                   <span className="text-sm font-bold text-slate-900 dark:text-white">January 2026</span>
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Member Since</span>
+                   <span className="text-xs font-bold text-slate-900 dark:text-white">{user?.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear()}</span>
+                 </div>
+                 <div className="flex flex-col pt-2 border-t border-slate-100 dark:border-gray-800">
+                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Next Eligible</span>
+                   <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{user?.nextDonationDate ? new Date(user.nextDonationDate).toLocaleDateString() : 'Eligible now'}</span>
                  </div>
                </div>
             </Card>
           </div>
 
-          {/* Main Area */}
+          {/* Right Column: Main Area */}
           <div className="lg:col-span-2 space-y-8">
             {isEditing ? (
-              <Card title="Edit Information" subtitle="Update your personal details.">
+              <Card title="Edit Information" subtitle="Update your personal details and location.">
                 <div className="grid gap-6 py-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 uppercase">Full Name</label>
@@ -209,14 +315,40 @@ export default function Profile() {
                     <input name="email" value={formData.email} readOnly className="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-medium text-slate-500 outline-none cursor-not-allowed dark:border-gray-800 dark:bg-gray-800" />
                   </div>
                   <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase">Mobile Phone</label>
+                    <input name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Phone number" className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 dark:border-gray-800 dark:bg-gray-800/50" />
+                  </div>
+                  <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 uppercase">Blood Group</label>
                     <select name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 dark:border-gray-800 dark:bg-gray-800/50">
                       {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map(g => <option key={g}>{g}</option>)}
                     </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 uppercase">Location</label>
-                    <input name="location" value={formData.location} onChange={handleInputChange} className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 dark:border-gray-800 dark:bg-gray-800/50" />
+                  <div className="col-span-full space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase">Location & GPS</label>
+                    <div className="flex gap-2">
+                      <input
+                        name="location"
+                        value={formData.location}
+                        onChange={handleInputChange}
+                        placeholder="City, District or Address"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium outline-none transition focus:border-red-500 dark:border-gray-800 dark:bg-gray-800/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGetLocation}
+                        disabled={gpsLoading}
+                        className="px-4 py-3 rounded-2xl bg-slate-900 dark:bg-gray-700 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                        title="Detect current GPS location"
+                      >
+                        {gpsLoading ? (
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <span>📍</span>
+                        )}
+                        <span className="hidden sm:inline">Get GPS</span>
+                      </button>
+                    </div>
                   </div>
                   <div className="col-span-full space-y-2">
                     <label className="text-xs font-bold text-slate-400 uppercase">Bio / Description</label>
@@ -230,37 +362,91 @@ export default function Profile() {
                   >
                     Update Profile Details
                   </LoadingButton>
-
                 </div>
               </Card>
             ) : (
               <div className="space-y-8">
-                <Card title="Personal Story" subtitle="A brief about your journey with LifeLink.">
-                   <p className="mt-4 text-slate-600 dark:text-gray-400 leading-relaxed italic">
-                     "{formData.bio}"
-                   </p>
+                {/* Digital Donor Card */}
+                <Card title="Digital Donor Card" subtitle="Your official LifeLink network identity.">
+                  <div className="mt-4 overflow-hidden rounded-[2rem] bg-gradient-to-br from-red-600 via-red-700 to-rose-950 p-8 text-white shadow-xl shadow-red-900/20 relative">
+                    <div className="absolute -right-10 -top-10 opacity-10">
+                      <svg className="h-48 w-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    
+                    <div className="relative z-10 flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-5 h-5 text-red-200" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                          <span className="text-xs font-black uppercase tracking-widest text-red-100">DONOR CARD</span>
+                        </div>
+                        <h2 className="text-3xl font-black tracking-tight">{user?.name}</h2>
+                        <div className="mt-2 flex items-center gap-2 w-fit rounded-full bg-white/20 px-3 py-1 text-xs font-bold backdrop-blur-md">
+                          <svg className="w-3 h-3 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                          Verified {user?.role === 'donor' ? 'Blood Donor' : user?.role}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-5xl font-black text-white/95">{user?.bloodGroup}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="relative z-10 mt-10 grid grid-cols-3 gap-4 border-t border-white/20 pt-6">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-red-200">Member Since</p>
+                        <p className="mt-1 text-lg font-black">{user?.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-red-200">Donations</p>
+                        <p className="mt-1 text-lg font-black">{donationsCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-red-200">Next Donation</p>
+                        <p className="mt-1 text-lg font-black truncate">{user?.nextDonationDate ? new Date(user.nextDonationDate).toLocaleDateString() : 'Eligible'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
 
-                <Card title="Recent Activity" subtitle="Your latest interactions with the network.">
-                  <div className="mt-6 space-y-4">
-                    {recentActivity.map((activity, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-5 dark:border-gray-800 dark:bg-gray-900/30">
-                        <div className="flex items-center gap-4">
-                          <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold ${
-                            activity.type === 'Donation' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-                          }`}>
-                            {activity.type === 'Donation' ? 'D' : 'A'}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-white">{activity.location}</p>
-                            <p className="text-xs text-slate-500">{new Date(activity.date).toLocaleDateString()}</p>
+                {/* Achievements List */}
+                <Card title="Achievements" subtitle="Milestones unlocked through verified donations and community activity.">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {achievements.length > 0 ? (
+                      achievements.map((ach) => (
+                        <div 
+                          key={ach.key} 
+                          className={`p-4 rounded-2xl border transition-all flex items-start gap-3 ${
+                            ach.unlocked 
+                              ? 'bg-amber-500/10 border-amber-500/30 text-slate-900 dark:text-white' 
+                              : 'bg-slate-50 dark:bg-gray-800/40 border-slate-200 dark:border-gray-800 opacity-60'
+                          }`}
+                        >
+                          <span className="text-2xl shrink-0">{ach.icon || '🏅'}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-black tracking-wide">{ach.title}</h4>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                ach.unlocked ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-gray-700 text-slate-600 dark:text-gray-300'
+                              }`}>
+                                {ach.unlocked ? '✓ Unlocked' : '🔒 Locked'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1 leading-snug">{ach.description}</p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">{activity.units}</span>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-6 text-slate-400 text-sm font-medium">
+                        No achievements unlocked yet. Complete donations to unlock badges!
                       </div>
-                    ))}
+                    )}
                   </div>
-                  <button className="mt-6 w-full text-center text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-red-600 transition">View Full History</button>
+                </Card>
+
+                {/* Personal Story */}
+                <Card title="Personal Story" subtitle="A brief about your journey with LifeLink.">
+                   <p className="mt-2 text-slate-600 dark:text-gray-400 leading-relaxed italic">
+                     "{formData.bio}"
+                   </p>
                 </Card>
               </div>
             )}
@@ -270,3 +456,4 @@ export default function Profile() {
     </div>
   )
 }
+

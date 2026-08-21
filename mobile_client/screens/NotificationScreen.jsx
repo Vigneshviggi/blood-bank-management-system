@@ -7,6 +7,22 @@ import { ChevronLeft, Search, Droplet, Megaphone, CheckCircle } from 'lucide-rea
 import { useNavigation } from '@react-navigation/native';
 import EmptyStateView from '../components/EmptyStateView';
 
+const timeAgo = (dateInput) => {
+  if (!dateInput) return 'Just now';
+  const date = new Date(dateInput);
+  const seconds = Math.floor((new Date() - date) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+  
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const NotificationScreen = () => {
   const { notifications, unreadCount, markAsRead, refreshNotifications } = useNotifications();
   const [refreshing, setRefreshing] = useState(false);
@@ -30,18 +46,31 @@ const NotificationScreen = () => {
     }
   };
 
+  const handlePress = (item) => {
+    if (!item.isRead && markAsRead) {
+      markAsRead(item._id);
+    }
+    if (item.type === 'blood_request' && item.payload?.requestId) {
+      navigation.navigate('RequestDetails', { request: { _id: item.payload.requestId } });
+    }
+  };
+
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={[styles.notificationCard, !item.read && styles.unreadCard]} activeOpacity={0.85}>
+    <TouchableOpacity 
+      style={[styles.notificationCard, !item.isRead && styles.unreadCard]} 
+      activeOpacity={0.85}
+      onPress={() => handlePress(item)}
+    >
       <View style={[styles.iconCircle, { backgroundColor: getIconBg(item.type) }]}>
         {getIcon(item.type)}
       </View>
       <View style={styles.cardContent}>
-        <Text style={styles.cardText} numberOfLines={2}>
+        <Text style={styles.cardText}>
           {item.message || item.title}
         </Text>
-        <Text style={styles.cardTime}>{item.time || 'Just now'}</Text>
+        <Text style={styles.cardTime}>{timeAgo(item.createdAt || item.time)}</Text>
       </View>
-      {!item.read && <View style={styles.unreadDot} />}
+      {!item.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
 

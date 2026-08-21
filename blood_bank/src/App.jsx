@@ -1,41 +1,40 @@
-import { useState } from 'react'
+import React, { useState, Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { DarkModeProvider } from './context/DarkModeContext.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import Navbar from './components/Navbar.jsx'
 import Sidebar from './components/Sidebar.jsx'
-import Dashboard from './components/Dashboard.jsx'
-import Requests from './components/Requests.jsx'
-import Profile from './components/Profile.jsx'
-import Donors from './components/Donors.jsx'
-import Inventory from './components/Inventory.jsx'
-import Hospitals from './components/Hospitals.jsx'
-import Camps from './components/Camps.jsx'
-import CreateCamp from './components/CreateCamp.jsx'
-import CampDetails from './components/CampDetails.jsx'
-import AdminPanel from './components/AdminPanel.jsx'
-import Contact from './components/Contact.jsx'
-import ContactSupport from './components/ContactSupport.jsx'
-import RespondPage from './components/RespondPage.jsx'
 import Footer from './components/Footer.jsx'
 import AuthLayout from './components/AuthLayout.jsx'
-import Login from './components/Login.jsx'
-import Register from './components/Register.jsx'
-import RegisterUser from './components/RegisterUser.jsx';
-import UserList from './components/UserList.jsx';
-import Settings from './components/Settings.jsx'
-import ProfileView from './components/ProfileView.jsx'
-import Notifications from './components/Notifications.jsx'
-import ForgotPassword from './components/ForgotPassword.jsx'
-import VerifyOTP from './components/VerifyOTP.jsx'
-import ResetPassword from './components/ResetPassword.jsx'
-import CampManagement from './components/CampManagement.jsx'
-
-
-
 import { LoadingProvider, useLoading } from './context/LoadingContext.jsx'
 import FullScreenLoader from './components/FullScreenLoader.jsx'
 import { Toaster } from 'react-hot-toast'
+
+// Lazy loaded pages
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
+const Requests = lazy(() => import('./components/Requests.jsx'));
+const Profile = lazy(() => import('./components/Profile.jsx'));
+const Donors = lazy(() => import('./components/Donors.jsx'));
+const Inventory = lazy(() => import('./components/Inventory.jsx'));
+const Hospitals = lazy(() => import('./components/Hospitals.jsx'));
+const Camps = lazy(() => import('./components/Camps.jsx'));
+const CreateCamp = lazy(() => import('./components/CreateCamp.jsx'));
+const CampDetails = lazy(() => import('./components/CampDetails.jsx'));
+const AdminPanel = lazy(() => import('./components/AdminPanel.jsx'));
+const Contact = lazy(() => import('./components/Contact.jsx'));
+const ContactSupport = lazy(() => import('./components/ContactSupport.jsx'));
+const RespondPage = lazy(() => import('./components/RespondPage.jsx'));
+const Login = lazy(() => import('./components/Login.jsx'));
+const Register = lazy(() => import('./components/Register.jsx'));
+const RegisterUser = lazy(() => import('./components/RegisterUser.jsx'));
+const UserList = lazy(() => import('./components/UserList.jsx'));
+const Settings = lazy(() => import('./components/Settings.jsx'));
+const ProfileView = lazy(() => import('./components/ProfileView.jsx'));
+const Notifications = lazy(() => import('./components/Notifications.jsx'));
+const ForgotPassword = lazy(() => import('./components/ForgotPassword.jsx'));
+const VerifyOTP = lazy(() => import('./components/VerifyOTP.jsx'));
+const ResetPassword = lazy(() => import('./components/ResetPassword.jsx'));
+const CampManagement = lazy(() => import('./components/CampManagement.jsx'));
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -67,43 +66,45 @@ function AppContent() {
             onClose={() => setSidebarOpen(false)}
           />
           <main className="w-full flex-1 overflow-auto">
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/verify-otp" element={<VerifyOTP />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
-                    <div className="mx-auto w-full max-w-7xl">
-                      <Dashboard />
+            <Suspense fallback={<FullScreenLoader isLoading={true} message="Loading Page..." />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/verify-otp" element={<VerifyOTP />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <div className="px-3 pb-8 sm:px-4 md:px-6 lg:px-8">
+                      <div className="mx-auto w-full max-w-7xl">
+                        <Dashboard />
+                      </div>
                     </div>
-                  </div>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/requests" element={<ProtectedRoute><Requests /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
-              <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-              <Route path="/hospitals" element={<ProtectedRoute><Hospitals /></ProtectedRoute>} />
-              <Route path="/camps" element={<ProtectedRoute><Camps /></ProtectedRoute>} />
-              <Route path="/create-camp" element={<ProtectedRoute><CreateCamp /></ProtectedRoute>} />
-              <Route path="/camp/:id" element={<ProtectedRoute><CampDetails /></ProtectedRoute>} />
-              <Route path="/camp-management/:id" element={<ProtectedRoute><CampManagement /></ProtectedRoute>} />
-              <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
-              <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
-              <Route path="/respond/:id" element={<ProtectedRoute><RespondPage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="/requests" element={<ProtectedRoute><Requests /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/donors" element={<ProtectedRoute><Donors /></ProtectedRoute>} />
+                <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+                <Route path="/hospitals" element={<ProtectedRoute><Hospitals /></ProtectedRoute>} />
+                <Route path="/camps" element={<ProtectedRoute><Camps /></ProtectedRoute>} />
+                <Route path="/create-camp" element={<ProtectedRoute><CreateCamp /></ProtectedRoute>} />
+                <Route path="/camp/:id" element={<ProtectedRoute><CampDetails /></ProtectedRoute>} />
+                <Route path="/camp-management/:id" element={<ProtectedRoute><CampManagement /></ProtectedRoute>} />
+                <Route path="/contact" element={<ProtectedRoute><Contact /></ProtectedRoute>} />
+                <Route path="/contact-support" element={<ProtectedRoute><ContactSupport /></ProtectedRoute>} />
+                <Route path="/respond/:id" element={<ProtectedRoute><RespondPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
-              <Route path="/admin-panel" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-              <Route path="/register-user" element={<ProtectedRoute><RegisterUser /></ProtectedRoute>} />
-              <Route path="/user-list" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
-              <Route path="/profile-view/:id" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
-            </Routes>
+                <Route path="/admin-panel" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
+                <Route path="/register-user" element={<ProtectedRoute><RegisterUser /></ProtectedRoute>} />
+                <Route path="/user-list" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
+                <Route path="/profile-view/:id" element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
         <Footer />

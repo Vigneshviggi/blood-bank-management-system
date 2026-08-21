@@ -23,7 +23,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
       Alert.alert(
         'OTP Sent',
         'If an account exists with this email, you will receive an OTP.',
-        [{ text: 'OK', onPress: () => navigation.navigate('ResetPassword', { email }) }]
+        [{ text: 'OK', onPress: () => navigation.navigate('OTPVerification', { email }) }]
       );
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || 'Failed to send OTP');

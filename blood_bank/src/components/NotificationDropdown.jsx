@@ -29,6 +29,8 @@ const NotificationDropdown = () => {
           });
         }
       });
+    } else {
+      setNotifications([]);
     }
 
     const handleClickOutside = (event) => {

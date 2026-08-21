@@ -1,76 +1,146 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Configure Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const normalizedEmailUser = (process.env.EMAIL_USER || '').trim();
 
-/**
- * Sends a professional OTP email using Nodemailer
- * @param {string} email - Recipient email
- * @param {string} otp - 6-digit OTP code
- */
-const sendOTPEmail = async (email, otp) => {
+const normalizedEmailPass = (process.env.EMAIL_PASS || '').replace(/\s+/g, '').trim();
+
+const normalizedEmailFrom = (process.env.EMAIL_FROM || normalizedEmailUser).trim();
+
+const transporter = process.env.EMAIL_HOST
+  ? nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: Number(process.env.EMAIL_PORT || 587),
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: normalizedEmailUser,
+        pass: normalizedEmailPass
+      }
+    })
+  : nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: normalizedEmailUser,
+        pass: normalizedEmailPass
+      }
+    });
+
+const sendOTPEmail = async (
+  email,
+  otp,
+  subjectOverride,
+  textOverride
+) => {
   try {
+    const fromAddress =
+      normalizedEmailFrom ||
+      normalizedEmailUser ||
+      'noreply@lifelink.local';
+
+    const fromName =
+      process.env.EMAIL_FROM_NAME ||
+      'LifeLink Network';
+
     const mailOptions = {
-      from: `"LifeLink Network" <${process.env.EMAIL_USER}>`,
+      from: `"${fromName}" <${fromAddress}>`,
+      replyTo: fromAddress,
       to: email,
-      subject: 'LifeLink - OTP Verification Code',
+      headers: {
+        'X-Priority': '1 (Highest)',
+        'X-Mailer': 'LifeLink-Mailer',
+      },
+
+      subject:
+        subjectOverride ||
+        'LifeLink - OTP Verification Code',
+
       html: `
-        <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f1f5f9; border-radius: 24px; overflow: hidden; background-color: #ffffff; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-          <div style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); padding: 40px 20px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.025em;">LifeLink</h1>
-            <p style="color: #fda4af; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;">Professional Blood Network</p>
-          </div>
-          
-          <div style="padding: 40px; background-color: #ffffff;">
-            <h2 style="color: #0f172a; margin-top: 0; font-size: 24px; font-weight: 700; text-align: center;">Verification Code</h2>
-            <p style="color: #475569; line-height: 1.7; font-size: 16px; text-align: center; margin-bottom: 32px;">
-              Your security is our priority. Use the code below to complete your verification process. This code will remain active for <strong>5 minutes</strong>.
-            </p>
-            
-            <div style="background-color: #fff1f2; border: 2px solid #fecdd3; border-radius: 16px; padding: 24px; text-align: center; margin: 0 auto 32px auto; max-width: 240px;">
-              <span style="font-size: 42px; font-weight: 800; color: #e11d48; letter-spacing: 12px; font-family: monospace;">${otp}</span>
+        <div style="margin:0;padding:0;background:#f6f7f9;font-family:Arial,Helvetica,sans-serif;">
+          <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+        
+            <div style="padding:28px 24px;text-align:center;background:#d7194a;">
+              <div style="font-size:30px;font-weight:700;color:#ffffff;">
+                LifeLink
+              </div>
+        
+              <div style="margin-top:6px;font-size:13px;color:#ffe4ea;">
+                Blood Network
+              </div>
             </div>
-            
-            <p style="color: #64748b; font-size: 14px; line-height: 1.6; text-align: center;">
-              If you didn't request this code, you can safely ignore this email. Someone may have entered your email address by mistake.
-            </p>
-            
-            <div style="margin-top: 40px; padding-top: 32px; border-top: 1px solid #f1f5f9; text-align: center;">
-              <p style="color: #94a3b8; font-size: 12px; margin-bottom: 8px;">
-                &copy; 2026 LifeLink Professional Blood Network.
+        
+            <div style="padding:36px 32px;">
+        
+              <h2 style="margin:0 0 20px;text-align:center;color:#111827;font-size:24px;">
+                Verify your email
+              </h2>
+        
+              <p style="color:#4b5563;font-size:15px;line-height:1.7;">
+                Hi,
               </p>
-              <p style="color: #cbd5e1; font-size: 11px; margin: 0;">
-                This is an automated security message. Please do not reply.
+        
+              <p style="color:#4b5563;font-size:15px;line-height:1.7;">
+                Use the verification code below to continue with your LifeLink account.
+              </p>
+        
+              <div style="margin:28px auto;padding:18px;text-align:center;background:#fff5f7;border:1px solid #fecdd3;border-radius:12px;max-width:220px;">
+                <span style="font-size:32px;font-weight:700;letter-spacing:8px;color:#d7194a;">
+                  ${otp}
+                </span>
+              </div>
+        
+              <p style="text-align:center;color:#4b5563;font-size:14px;">
+                This code expires in <strong>5 minutes</strong>.
+              </p>
+        
+              <p style="margin-top:28px;color:#6b7280;font-size:13px;line-height:1.6;">
+                If you didn't request this code, you can safely ignore this email.
+              </p>
+        
+            </div>
+        
+            <div style="padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:12px;">
+                LifeLink Network
+              </p>
+        
+              <p style="margin:6px 0 0;color:#9ca3af;font-size:11px;">
+                Automated security email
               </p>
             </div>
+        
           </div>
         </div>
       `,
-      text: `Your LifeLink verification code is: ${otp}. This code expires in 5 minutes.`
+
+      text:
+        textOverride ||
+        `Your LifeLink verification code is: ${otp}. This code expires in 5 minutes.`
     };
 
-    // Check for dummy credentials to prevent timeout hangs in development
-    if (!process.env.EMAIL_USER || process.env.EMAIL_USER.includes('yourgmail')) {
-      console.log("⚠️ Dummy email credentials detected. Skipping actual email send.");
-      console.log(`[MOCK EMAIL SENT] To: ${email}, OTP: ${otp}`);
-      return true;
+    const hasDummyCredentials =
+      !process.env.EMAIL_USER ||
+      !process.env.EMAIL_PASS ||
+      process.env.EMAIL_USER.includes('yourgmail') ||
+      process.env.EMAIL_PASS.includes('your_google') ||
+      process.env.EMAIL_PASS.includes('your');
+
+    if (hasDummyCredentials) {
+      console.log("⚠️ Email delivery is not configured.");
+      console.log("Please configure EMAIL_USER and EMAIL_PASS.");
+      console.log(`[EMAIL NOT SENT] To: ${email}`);
+      return false;
     }
 
     const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Mail Sent via Gmail:", info.messageId);
+    console.log("✅ Mail Sent:", info.messageId);
     return true;
   } catch (err) {
     console.log("❌ MAIL SERVICE ERROR:", err);
-    console.log(`[BACKUP LOG] OTP for ${email}: ${otp}`);
+    console.log(`[BACKUP LOG] Failed to send OTP to ${email}`);
     return false;
   }
 };
 
-module.exports = { sendOTPEmail };
+module.exports = {
+  sendOTPEmail
+};

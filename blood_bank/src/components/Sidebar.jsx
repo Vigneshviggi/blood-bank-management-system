@@ -11,9 +11,12 @@ export default function Sidebar({ isOpen, onClose }) {
     { label: 'Donors', icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z', path: '/donors' },
     { label: 'Requests', icon: 'M9 12h6M12 9v6M20 6H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Z', path: '/requests' },
     { label: 'Hospitals', icon: 'M12 3 4 7v13h16V7l-8-4Zm0 2.236 5.754 2.877V19H6.246V8.113L12 5.236ZM11 11h2v4h3v2h-3v3h-2v-3H8v-2h3v-4Z', path: '/hospitals' },
-    { label: 'Inventory', icon: 'M6 7h12M6 12h12M6 17h12', path: '/inventory' },
     { label: 'Camps', icon: 'M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5Z', path: '/camps' },
   ]
+
+  if (user?.role === 'hospital' || user?.role === 'admin') {
+    baseMenuItems.splice(4, 0, { label: 'Inventory', icon: 'M6 7h12M6 12h12M6 17h12', path: '/inventory' });
+  }
 
   const adminItems = user?.role === 'admin' ? [
     { label: 'Admin Center', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', path: '/admin-panel' }

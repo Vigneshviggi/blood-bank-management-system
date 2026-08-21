@@ -7,6 +7,7 @@ import InventoryScreen from '../screens/InventoryScreen';
 import BloodRequestScreen from '../screens/BloodRequestScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import QRScannerScreen from '../screens/QRScannerScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -28,6 +29,7 @@ const BloodBankTabs = () => {
       <Tab.Screen name="Requests" component={BloodRequestScreen} options={{ title: 'Requests' }} />
       <Tab.Screen name="Notifications" component={NotificationScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <Tab.Screen name="QRScanner" component={QRScannerScreen} options={{ tabBarButton: () => null }} />
     </Tab.Navigator>
   );
 };

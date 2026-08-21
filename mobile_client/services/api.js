@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../config/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,6 +14,14 @@ const api = axios.create({
 
 // Attach JWT token and Start performance timer
 api.interceptors.request.use(async (config) => {
+  console.log("BASE URL:", config.baseURL);
+  console.log("REQUEST URL:", config.url);
+
+  if (config.url && !/^https?:\/\//i.test(config.url)) {
+    config.url = config.url.replace(/^\/+/, '');
+    config.url = config.url.replace(/^api\//, '');
+  }
+
   const token = await AsyncStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -42,7 +50,7 @@ api.interceptors.response.use(
     const networkState = await Network.getNetworkStateAsync();
     
     // If it's a network error and we haven't retried yet
-    if ((!networkState.isInternetReachable || error.message === 'Network Error') && !originalRequest._retry) {
+    if ((!networkState.isInternetReachable || error.message === 'Network Error' || error.code === 'ECONNABORTED') && !originalRequest._retry) {
       originalRequest._retry = true;
       Toast.show({
         type: 'error',
@@ -53,7 +61,7 @@ api.interceptors.response.use(
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           api(originalRequest).then(resolve).catch(reject);
-        }, 5000);
+        }, 8000);
       });
     }
 

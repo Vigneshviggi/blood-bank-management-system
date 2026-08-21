@@ -26,6 +26,14 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'User not found' });
     }
 
+    // Check if tokenVersion matches (for Logout All Devices feature)
+    // If decoded.tokenVersion is undefined, default to 0 for backwards compatibility
+    const tokenVersion = decoded.tokenVersion || 0;
+    const userTokenVersion = user.tokenVersion || 0;
+    if (tokenVersion !== userTokenVersion) {
+      return res.status(401).json({ success: false, message: 'Session expired. Please login again.' });
+    }
+
     // Check if user is active
     if (user.status !== 'active' && user.status !== undefined) {
       return res.status(403).json({ success: false, message: `Account is ${user.status}` });

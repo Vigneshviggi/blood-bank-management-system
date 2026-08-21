@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../constants/Theme';
 
 const PRIORITIES = ['Normal', 'High', 'Critical'];
 
@@ -12,17 +13,19 @@ export default function PrioritySelector({ selectedPriority, onSelect }) {
       <View style={styles.row}>
         {PRIORITIES.map((level) => {
           const isActive = selectedPriority === level;
-          
-          let activeColor = '#0E9F6E'; // Normal
-          if (level === 'High') activeColor = '#DC7609';
-          if (level === 'Critical') activeColor = '#D92D20';
+          let activeStyle = {};
+          if (isActive) {
+            if (level === 'High') activeStyle = { backgroundColor: '#F59E0B', borderColor: '#F59E0B' };
+            else if (level === 'Critical') activeStyle = { backgroundColor: Colors.error, borderColor: Colors.error };
+            else activeStyle = { backgroundColor: Colors.textSecondary, borderColor: Colors.textSecondary };
+          }
 
           return (
             <TouchableOpacity
               key={level}
               style={[
                 styles.button,
-                isActive && { backgroundColor: activeColor, borderColor: activeColor }
+                isActive && activeStyle
               ]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -51,35 +54,33 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    gap: 8,
   },
   button: {
     flex: 1,
-    backgroundColor: '#1D1B20',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   text: {
-    color: '#A79FA8',
+    color: Colors.textSecondary,
     fontWeight: '700',
     fontSize: 12,
-    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   textActive: {
-    color: '#FFF',
+    color: '#FFFFFF',
   },
 });

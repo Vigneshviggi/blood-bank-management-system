@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { Colors, Radius, Typography } from '../../constants/Theme';
 
-const Input = ({ label, error, ...props }) => {
+const Input = ({ label, error, isPassword, ...props }) => {
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={styles.container}>
@@ -26,8 +28,21 @@ const Input = ({ label, error, ...props }) => {
             setFocused(false);
             props.onBlur?.(e);
           }}
+          secureTextEntry={isPassword ? !showPassword : props.secureTextEntry}
           {...props}
         />
+        {isPassword && (
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <EyeOff size={20} color={Colors.textMuted} />
+            ) : (
+              <Eye size={20} color={Colors.textMuted} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -56,7 +71,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     minHeight: 54,
     paddingHorizontal: 16,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   inputFocused: {
     borderColor: Colors.primary,
@@ -66,10 +82,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   input: {
+    flex: 1,
     fontSize: 16,
     color: Colors.text,
     fontFamily: Typography.body,
     paddingVertical: 12,
+  },
+  eyeIcon: {
+    padding: 8,
   },
   errorText: {
     color: Colors.error,

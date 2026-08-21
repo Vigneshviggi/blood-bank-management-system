@@ -1,40 +1,41 @@
 import React from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Colors, Radius, Shadows } from '../../constants/Theme';
 
-const GlassCard = ({ children, style }) => {
+// flat: true renders a plain translucent card instead of a real BlurView.
+// Use flat cards inside FlatList rows / long lists (Users, Hospitals, Requests) —
+// rendering many live blur surfaces at once is a measurable scroll-perf cost,
+// especially on Android. Reserve real blur (flat={false}, the default) for
+// hero sections / single cards where the visual effect actually matters.
+const GlassCard = ({ children, style, intensity = 80, tint = 'light', flat = false }) => {
+  if (flat || Platform.OS === 'web') {
+    return (
+      <View style={[styles.card, styles.flatCard, style]}>
+        {children}
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.card, Platform.OS === 'web' ? styles.webCard : styles.nativeCard, style]}>
-      <View style={styles.hairline} />
+    <BlurView intensity={intensity} tint={tint} style={[styles.card, style]}>
       {children}
-    </View>
+    </BlurView>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: Radius.xl,
-    padding: 20,
+    padding: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    borderColor: 'rgba(255, 255, 255, 0.7)',
     backgroundColor: Colors.surface,
     ...Shadows.soft,
   },
-  nativeCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.96)',
-  },
-  webCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    backdropFilter: 'blur(16px)',
-  },
-  hairline: {
-    position: 'absolute',
-    top: 0,
-    left: 16,
-    right: 16,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+  flatCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
   },
 });
 

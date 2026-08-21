@@ -17,12 +17,24 @@ const CompletedRequestsScreen = ({ navigation }) => {
 
   const fetchCompleted = async () => {
     try {
-      const res = await api.get('/requests?status=Completed');
-      const filtered = res.data.filter((request) => {
-        const userId = String(user?._id || user?.id);
-        return String(request.requesterId) === userId || request.responses?.some((response) => String(response.responderId) === userId);
+      const res = await api.get('/requests');
+      const allRequests = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      
+      const completedOrOutdated = allRequests.filter((request) => {
+        const requiredDate = request.requiredDate || request.dateRequired || request.createdAt;
+        const isOutdated = requiredDate ? new Date(requiredDate).setHours(23, 59, 59, 999) < new Date().getTime() : false;
+        
+        if (request.status === 'Completed' || isOutdated) {
+          // If it's just outdated (not explicitly completed), change status for display
+          if (isOutdated && request.status !== 'Completed') {
+            request.status = 'Outdated';
+          }
+          return true;
+        }
+        return false;
       });
-      setRequests(filtered);
+      
+      setRequests(completedOrOutdated);
     } catch (error) {
       setRequests([]);
     } finally {
@@ -40,20 +52,28 @@ const CompletedRequestsScreen = ({ navigation }) => {
     await fetchCompleted();
   };
 
-  return (
-    <ScreenContainer>
+  const renderHeader = () => (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>Completed Requests</Text>
         <Badge label={`${requests.length} Done`} variant="success" />
       </View>
       <Text style={styles.subtitle}>Requests that were fulfilled or closed after a response.</Text>
+    </>
+  );
 
+  return (
+    <ScreenContainer scrollable={false}>
       {loading ? (
-        <LoadingSkeleton height={120} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          {renderHeader()}
+          <LoadingSkeleton height={120} />
+        </View>
       ) : (
         <FlatList
           data={requests}
           keyExtractor={(item) => item._id}
+          ListHeaderComponent={renderHeader}
           renderItem={({ item }) => (
             <RequestCard request={item} onPress={() => navigation.navigate('RequestDetails', { request: item })} />
           )}
@@ -104,6 +124,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
     paddingBottom: 120,
   },
 });

@@ -1,28 +1,81 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useRef } from 'react';
+import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import { BlurView } from 'expo-blur';
+import {
+  Home,
+  HeartPulse,
+  CalendarDays,
+  Bell,
+  User,
+  Droplets,
+  Users,
+  Hospital,
+  BarChart3,
+} from 'lucide-react-native';
 import { Colors, Radius, Shadows, Typography } from '../constants/Theme';
 
+// Covers every tab name used across UserTabs, HospitalTabs and AdminTabs.
+// SVG icons (not font glyphs) so there is nothing to "finish loading" — they
+// paint on the very first frame, unlike Ionicons which can flash as boxes.
 const icons = {
-  Home: 'home',
-  Requests: 'medkit',
-  Map: 'map',
-  Camps: 'calendar',
-  Notifications: 'notifications',
-  Users: 'people',
-  Hospitals: 'medical',
-  Analytics: 'stats-chart',
-  Profile: 'person',
-  Inventory: 'medkit',
+  Home,
+  Requests: HeartPulse,
+  Camps: CalendarDays,
+  Notifications: Bell,
+  Profile: User,
+  Inventory: Droplets,
+  Users,
+  Hospitals: Hospital,
+  Analytics: BarChart3,
+};
+
+const TabButton = ({ route, isFocused, label, onPress }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  const Icon = icons[route.name] || Home;
+
+  const animateTo = (value) => {
+    Animated.spring(scale, {
+      toValue: value,
+      useNativeDriver: true,
+      speed: 30,
+      bounciness: 8,
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      onPress={onPress}
+      onPressIn={() => animateTo(0.88)}
+      onPressOut={() => animateTo(1)}
+      style={styles.tab}
+      activeOpacity={0.8}
+    >
+      <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+        <Icon
+          size={24}
+          color={isFocused ? Colors.primary : Colors.textMuted}
+          strokeWidth={isFocused ? 2.4 : 2}
+        />
+        <Text style={[styles.label, isFocused && styles.activeLabel]}>{label}</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
 };
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.blur}>
+      <BlurView intensity={60} tint="light" style={styles.blur}>
         <View style={styles.tabBar}>
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
+            if (options.tabBarButton) {
+              const btn = options.tabBarButton();
+              if (btn === null) return null;
+            }
+
             const label =
               options.tabBarLabel !== undefined
                 ? options.tabBarLabel
@@ -39,31 +92,26 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
                 canPreventDefault: true,
               });
               if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
+                if (route.name === 'Profile') {
+                  navigation.navigate('Profile', { screen: 'ProfileScreen', params: { userId: null } });
+                } else {
+                  navigation.navigate(route.name);
+                }
               }
             };
 
             return (
-              <TouchableOpacity
+              <TabButton
                 key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
+                route={route}
+                isFocused={isFocused}
+                label={label}
                 onPress={onPress}
-                style={styles.tab}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={icons[route.name]}
-                  size={28}
-                  color={isFocused ? Colors.primary : Colors.textMuted}
-                  style={isFocused ? styles.activeIcon : styles.icon}
-                />
-                <Text style={[styles.label, isFocused && styles.activeLabel]}>{label}</Text>
-              </TouchableOpacity>
+              />
             );
           })}
         </View>
-      </View>
+      </BlurView>
     </View>
   );
 };
@@ -99,20 +147,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: Radius.lg,
   },
-  icon: {
-    marginBottom: 2,
-    opacity: 0.7,
-  },
-  activeIcon: {
-    marginBottom: 2,
-    opacity: 1,
-    transform: [{ scale: 1.15 }],
-  },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.textMuted,
     fontWeight: '700',
     fontFamily: Typography.heading,
+    marginTop: 3,
   },
   activeLabel: {
     color: Colors.primary,

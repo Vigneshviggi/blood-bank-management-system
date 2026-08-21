@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { ChevronDown, X, CheckCircle2 } from 'lucide-react-native';
+import { Colors } from '../../constants/Theme';
 import api from '../../services/api';
 import * as Haptics from 'expo-haptics';
 
@@ -22,7 +23,6 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
       }
     };
     
-    // Only fetch if opening or hasn't fetched yet
     if (isVisible && hospitals.length === 0) {
       fetchHospitals();
     }
@@ -47,14 +47,14 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
     <View style={styles.container}>
       <Text style={[styles.label, error && styles.labelError]}>Target Hospital</Text>
       <TouchableOpacity
-        style={[styles.input, error && styles.inputError]}
+        style={[styles.dropdown, error && styles.dropdownError]}
         onPress={handleOpen}
         activeOpacity={0.7}
       >
-        <Text style={selectedName ? styles.inputText : styles.placeholderText}>
+        <Text style={[styles.dropdownText, !selectedName && styles.dropdownTextPlaceholder]}>
           {selectedName || 'Choose a hospital (Optional)'}
         </Text>
-        <Ionicons name="chevron-down" size={20} color="#6E6771" />
+        <ChevronDown size={20} color={Colors.textSecondary} />
       </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
 
@@ -64,23 +64,22 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Hospital</Text>
               <TouchableOpacity onPress={() => setIsVisible(false)} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                <Ionicons name="close" size={24} color="#FFF" />
+                <X size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
             
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <TouchableOpacity
                 style={styles.modalItem}
                 onPress={() => handleSelect(null)}
               >
                 <Text style={styles.modalItemText}>None / Any Hospital</Text>
-                {!selectedId && <Ionicons name="checkmark-circle" size={20} color="#C81E4A" />}
+                {!selectedId && <CheckCircle2 size={20} color={Colors.primary} />}
               </TouchableOpacity>
               
               {isLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator color="#C81E4A" />
-                  <Text style={styles.loadingText}>Loading hospitals...</Text>
+                  <ActivityIndicator color={Colors.primary} />
                 </View>
               ) : (
                 hospitals.map(h => (
@@ -93,7 +92,7 @@ export default function HospitalDropdown({ selectedId, selectedName, onSelect, e
                       <Text style={styles.modalItemText}>{h.name}</Text>
                       {h.address && <Text style={styles.modalItemSubtext}>{h.address}</Text>}
                     </View>
-                    {selectedId === h._id && <Ionicons name="checkmark-circle" size={20} color="#C81E4A" />}
+                    {selectedId === h._id && <CheckCircle2 size={20} color={Colors.primary} />}
                   </TouchableOpacity>
                 ))
               )}
@@ -110,87 +109,79 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 12,
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   labelError: {
-    color: '#C81E4A',
+    color: Colors.error,
   },
-  input: {
-    backgroundColor: '#1D1B20',
-    borderRadius: 12,
-    padding: 16,
+  dropdown: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 48,
   },
-  inputError: {
+  dropdownError: {
     borderColor: 'rgba(255, 82, 82, 0.5)',
     backgroundColor: 'rgba(255, 82, 82, 0.05)',
   },
-  inputText: {
-    color: '#FFF',
-    fontSize: 16,
+  dropdownText: {
+    color: Colors.text,
+    fontSize: 15,
+    flex: 1,
   },
-  placeholderText: {
-    color: '#6E6771',
-    fontSize: 16,
+  dropdownTextPlaceholder: {
+    color: Colors.textSecondary,
   },
   errorText: {
-    color: '#C81E4A',
+    color: Colors.error,
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1D1B20',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     maxHeight: '70%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  scrollContent: {
-    paddingBottom: 40,
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text,
   },
   modalItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1D1B20',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
     alignItems: 'center',
   },
   modalItemText: {
-    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    color: Colors.text,
   },
   modalItemSubtext: {
     color: '#6E6771',

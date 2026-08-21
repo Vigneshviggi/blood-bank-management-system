@@ -55,20 +55,28 @@ const MyResponsesScreen = ({ navigation }) => {
     );
   };
 
-  return (
-    <ScreenContainer>
+  const renderHeader = () => (
+    <>
       <View style={styles.header}>
         <Text style={styles.title}>My Responses</Text>
         <Badge label={`${requests.length} Items`} variant="primary" />
       </View>
       <Text style={styles.subtitle}>Track every blood request you answered and the status of your response.</Text>
+    </>
+  );
 
+  return (
+    <ScreenContainer scrollable={false}>
       {loading ? (
-        <LoadingSkeleton height={120} />
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          {renderHeader()}
+          <LoadingSkeleton height={120} />
+        </View>
       ) : (
         <FlatList
           data={requests}
           keyExtractor={(item) => item._id}
+          ListHeaderComponent={renderHeader}
           renderItem={renderItem}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
           ListEmptyComponent={
@@ -137,6 +145,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listContent: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
     paddingBottom: 120,
   },
 });

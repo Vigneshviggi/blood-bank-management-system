@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Alert, ActivityIndicator, TextInput, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import ScreenContainer from '../components/ScreenContainer';
+import ScreenHeader from '../components/ScreenHeader';
 import GlassCard from '../components/ui/GlassCard';
 import { Colors } from '../constants/Theme';
 import api from '../services/api';
@@ -12,6 +12,26 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const getFallbackImage = (title) => {
+  const t = title.toLowerCase();
+  if (t.includes('college') || t.includes('university') || t.includes('student') || t.includes('campus')) {
+    return 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('hospital') || t.includes('clinic') || t.includes('health') || t.includes('medical') || t.includes('care')) {
+    return 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('emergency') || t.includes('urgent')) {
+    return 'https://images.unsplash.com/photo-1587559070757-f72a388edbba?auto=format&fit=crop&w=800&q=80';
+  }
+  if (t.includes('corporate') || t.includes('office') || t.includes('tech') || t.includes('company')) {
+    return 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80';
+  }
+  // Generic Blood Donation Image
+  return 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&w=800&q=80';
+};
 
 const ManageCamps = () => {
   const { user } = useContext(AuthContext);
@@ -57,6 +77,12 @@ const ManageCamps = () => {
   };
 
   const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Sorry, we need camera roll permissions to make this work!');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
@@ -71,6 +97,14 @@ const ManageCamps = () => {
     if (!formData.title || !formData.location || !formData.date) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
+    }
+    if (Number(formData.capacity) <= 0) {
+      Alert.alert('Error', 'Maximum donors must be greater than 0');
+      return;
+    }
+    if (formData.startTime && formData.endTime && formData.startTime === formData.endTime) {
+       Alert.alert('Error', 'End time must be after start time');
+       return;
     }
 
     setCreating(true);
@@ -100,21 +134,33 @@ const ManageCamps = () => {
       data.append('organizerType', 'Hospital');
 
       if (formData.bannerImage) {
-        // React Native requires uri, name, and type for File upload
-        const uriParts = formData.bannerImage.uri.split('.');
-        const fileType = uriParts[uriParts.length - 1];
+        const uri = formData.bannerImage.uri;
+        const filename = formData.bannerImage.fileName || uri.split('/').pop() || 'photo.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        
         data.append('bannerImage', {
-          uri: formData.bannerImage.uri,
-          name: `photo.${fileType}`,
-          type: `image/${fileType}`,
+          uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+          name: filename,
+          type: formData.bannerImage.mimeType || type,
         });
+      } else {
+        // Use smart fallback image based on the title keywords
+        data.append('bannerImage', getFallbackImage(formData.title));
       }
 
-      await api.post('/camps', data, {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(`${api.defaults.baseURL}/camps`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         },
+        body: data,
       });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
 
       setModalVisible(false);
       setFormData({
@@ -192,6 +238,36 @@ const ManageCamps = () => {
     }
   };
 
+  const handleGetLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Allow location access to use this feature.');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({});
+      const lat = loc.coords.latitude;
+      const lng = loc.coords.longitude;
+      
+      const [address] = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      let addrString = formData.location;
+      
+      if (address) {
+        addrString = [address.name, address.street, address.city, address.region].filter(Boolean).join(', ');
+      }
+      
+      setFormData({
+        ...formData,
+        latitude: lat,
+        longitude: lng,
+        location: addrString || 'Current Location'
+      });
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to fetch location.');
+    }
+  };
+
   const renderCampCard = ({ item }) => {
     return (
       <TouchableOpacity 
@@ -234,16 +310,16 @@ const ManageCamps = () => {
   });
 
   return (
-    <ScreenContainer scrollable={false} style={{ paddingHorizontal: 0 }}>
-      <View style={styles.topNav}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation?.goBack?.()}>
-          <Info size={24} color={Colors.text} style={{transform: [{rotate: '180deg'}]}} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>My Blood Camps</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-          <Plus size={24} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <ScreenHeader 
+        title="My Blood Camps" 
+        showBack={false} 
+        rightAction={
+          <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
+            <Plus size={24} color={Colors.text} />
+          </TouchableOpacity>
+        } 
+      />
 
       <View style={styles.tabContainer}>
         {['Upcoming', 'Ongoing', 'Completed'].map(tab => (
@@ -277,13 +353,10 @@ const ManageCamps = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
         >
-          <View style={styles.modalNav}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Info size={24} color={Colors.text} style={{transform: [{rotate: '180deg'}]}} />
-            </TouchableOpacity>
-            <Text style={styles.navTitle}>Create Blood Camp</Text>
-            <View style={{ width: 24 }} />
-          </View>
+          <ScreenHeader 
+            title="Create Blood Camp" 
+            onBack={() => setModalVisible(false)} 
+          />
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             <Text style={styles.label}>Camp Name</Text>
@@ -297,6 +370,20 @@ const ManageCamps = () => {
             <View style={styles.row}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={styles.label}>Date</Text>
+                {Platform.OS === 'web' ? (
+                   <input
+                     type="date"
+                     style={{ padding: 12, borderRadius: 8, border: '1px solid #F0E4E4', width: '100%' }}
+                     value={formData.date ? formData.date.split('/').reverse().join('-') : ''}
+                     onChange={(e) => {
+                       const d = e.target.value;
+                       if (d) {
+                         const parts = d.split('-');
+                         setFormData({...formData, date: `${parts[2]}/${parts[1]}/${parts[0]}`});
+                       }
+                     }}
+                   />
+                ) : (
                 <TouchableOpacity 
                   style={[styles.input, { justifyContent: 'center' }]} 
                   onPress={() => setShowDatePicker(true)}
@@ -305,9 +392,18 @@ const ManageCamps = () => {
                     {formData.date || 'DD/MM/YYYY'}
                   </Text>
                 </TouchableOpacity>
+                )}
               </View>
               <View style={{ flex: 1, marginLeft: 8 }}>
                 <Text style={styles.label}>Start Time</Text>
+                {Platform.OS === 'web' ? (
+                   <input
+                     type="time"
+                     style={{ padding: 12, borderRadius: 8, border: '1px solid #F0E4E4', width: '100%' }}
+                     value={formData.startTime}
+                     onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                   />
+                ) : (
                 <TouchableOpacity 
                   style={[styles.input, { justifyContent: 'center' }]} 
                   onPress={() => setShowStartTimePicker(true)}
@@ -316,12 +412,21 @@ const ManageCamps = () => {
                     {formData.startTime || '10:00 AM'}
                   </Text>
                 </TouchableOpacity>
+                )}
               </View>
             </View>
 
             <View style={styles.row}>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={styles.label}>End Time</Text>
+                {Platform.OS === 'web' ? (
+                   <input
+                     type="time"
+                     style={{ padding: 12, borderRadius: 8, border: '1px solid #F0E4E4', width: '100%' }}
+                     value={formData.endTime}
+                     onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                   />
+                ) : (
                 <TouchableOpacity 
                   style={[styles.input, { justifyContent: 'center' }]} 
                   onPress={() => setShowEndTimePicker(true)}
@@ -330,6 +435,7 @@ const ManageCamps = () => {
                     {formData.endTime || '04:00 PM'}
                   </Text>
                 </TouchableOpacity>
+                )}
               </View>
               <View style={{ flex: 1, marginLeft: 8 }} />
             </View>
@@ -358,12 +464,21 @@ const ManageCamps = () => {
             )}
 
             <Text style={styles.label}>Venue</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Saveetha Hospital, Chennai"
-              value={formData.location}
-              onChangeText={(val) => setFormData({...formData, location: val})}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                placeholder="e.g. Saveetha Hospital, Chennai"
+                value={formData.location}
+                onChangeText={(val) => setFormData({...formData, location: val})}
+              />
+              <TouchableOpacity 
+                style={styles.locationBtn} 
+                onPress={handleGetLocation}
+                activeOpacity={0.8}
+              >
+                <MapPin size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.label}>Description</Text>
             <TextInput
@@ -419,23 +534,14 @@ const ManageCamps = () => {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-    </ScreenContainer>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  topNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  navTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
   addBtn: {
     padding: 4,
@@ -537,16 +643,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  modalNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0E4E4',
+    backgroundColor: Colors.background,
   },
   modalContent: {
     padding: 20,
@@ -608,6 +705,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
+  },
+  locationBtn: {
+    backgroundColor: Colors.primary,
+    height: 44,
+    width: 44,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });
 

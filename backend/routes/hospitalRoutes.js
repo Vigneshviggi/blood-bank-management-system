@@ -28,9 +28,13 @@ router.get('/profile/me', verifyToken, authorizeRoles('hospital', 'admin', 'supe
       hospital = await Hospital.findById(req.user.hospitalId);
     }
     if (!hospital) {
+      if (!req.user.registrationNumber) {
+        return res.status(400).json({ error: "Registration number is required to create a hospital profile." });
+      }
+
       hospital = new Hospital({
         name: req.user.name + ' Hospital',
-        registrationNumber: req.user.registrationNumber || 'HOSP-' + Math.floor(100000 + Math.random() * 900000),
+        registrationNumber: req.user.registrationNumber,
         address: req.user.location || 'City Hospital',
         phone: req.user.phone || '0000000000',
         email: req.user.email,
@@ -140,7 +144,23 @@ router.get('/', async (req, res) => {
 // Get aggregated stock data
 router.get('/stock', verifyToken, async (req, res) => {
   try {
-    const hospitals = await Hospital.find().lean();
+    let query = {};
+    if (req.user.role === 'hospital') {
+       let hospital = await Hospital.findOne({ user: req.user._id || req.user.id });
+       if (!hospital && req.user.hospitalId) {
+          hospital = await Hospital.findById(req.user.hospitalId);
+       }
+       if (hospital) {
+          query = { _id: hospital._id };
+       } else {
+          return res.json({
+            'O+': 0, 'A+': 0, 'B+': 0, 'AB+': 0,
+            'O-': 0, 'A-': 0, 'B-': 0, 'AB-': 0
+          });
+       }
+    }
+
+    const hospitals = await Hospital.find(query).lean();
     const aggregateStock = {
       'O+': 0, 'A+': 0, 'B+': 0, 'AB+': 0,
       'O-': 0, 'A-': 0, 'B-': 0, 'AB-': 0

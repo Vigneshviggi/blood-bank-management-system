@@ -4,7 +4,8 @@ import { AuthContext } from '../context/AuthContext';
 import ScreenContainer from '../components/ScreenContainer';
 import api from '../services/api';
 import { Colors } from '../constants/Theme';
-import { Info, MapPin, Calendar, Check, X } from 'lucide-react-native';
+import { Info } from 'lucide-react-native';
+import RequestCard from '../components/RequestCard';
 
 const tabs = ['Pending', 'Accepted', 'Completed', 'Rejected'];
 
@@ -32,52 +33,16 @@ const BloodRequestsScreen = ({ navigation }) => {
   };
 
   const filteredRequests = requests.filter(req => {
-    // For demo purposes, we randomly assign statuses if they don't have one
     const status = req.status || 'Pending';
     return status.toLowerCase() === activeTab.toLowerCase();
   });
 
   const renderRequestCard = ({ item }) => {
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.patientName}>{item.patientName || 'Unknown Patient'}</Text>
-          <Text style={styles.bloodGroup}>{item.bloodGroup}</Text>
-        </View>
-        
-        <View style={styles.unitRow}>
-          <Text style={styles.unitsText}>{item.unitsRequired || 1} Units</Text>
-          <View style={styles.priorityBadge}>
-            <Text style={styles.priorityText}>High</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <MapPin size={14} color={Colors.textSecondary} />
-            <Text style={styles.infoText}>{item.hospitalName || 'City Care Hospital'}</Text>
-          </View>
-          <Text style={styles.distanceText}>2.4 km away</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <Calendar size={14} color={Colors.textSecondary} />
-            <Text style={styles.infoText}>18 May 2025, 10:30 AM</Text>
-          </View>
-        </View>
-
-        {activeTab === 'Pending' && (
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.rejectBtn}>
-              <Text style={styles.rejectBtnText}>Reject</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptBtn}>
-              <Text style={styles.acceptBtnText}>Accept</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+      <RequestCard 
+        request={item} 
+        onRespond={() => navigation.navigate('RequestDetails', { request: item })} 
+      />
     );
   };
 
@@ -174,105 +139,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 20,
     paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F0E4E4',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  patientName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  bloodGroup: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
-  unitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  unitsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    marginRight: 12,
-  },
-  priorityBadge: {
-    backgroundColor: '#FDE7ED',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#FDE7ED',
-  },
-  priorityText: {
-    fontSize: 12,
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  infoText: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginLeft: 6,
-  },
-  distanceText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  rejectBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#F0E4E4',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  rejectBtnText: {
-    color: Colors.text,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  acceptBtn: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  acceptBtnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
   },
   emptyText: {
     textAlign: 'center',
